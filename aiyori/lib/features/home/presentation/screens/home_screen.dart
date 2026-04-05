@@ -7,226 +7,364 @@ class HomeScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: CustomScrollView(
-        slivers: [
-          _buildAppBar(context),
-          SliverPadding(
-            padding: const EdgeInsets.all(20),
-            sliver: SliverList(
-              delegate: SliverChildListDelegate([
-                _WelcomeCard(),
-                const SizedBox(height: 24),
-                _SectionTitle(title: 'Acciones rápidas'),
-                const SizedBox(height: 12),
-                _QuickActionsGrid(),
-                const SizedBox(height: 24),
-                _SectionTitle(title: 'Recientes'),
-                const SizedBox(height: 12),
-                _RecentList(),
-              ]),
+      backgroundColor: AppColors.surface,
+      body: SafeArea(
+        child: Column(
+          children: [
+            _TopBar(),
+            Expanded(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _WelcomeBanner(),
+                    const SizedBox(height: 28),
+                    _SectionLabel('Acciones rápidas'),
+                    const SizedBox(height: 12),
+                    _QuickActionsGrid(),
+                    const SizedBox(height: 28),
+                    _SectionLabel('Recientes'),
+                    const SizedBox(height: 12),
+                    _RecentList(),
+                    const SizedBox(height: 32),
+                    _ContactFooter(),
+                    const SizedBox(height: 16),
+                  ],
+                ),
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
       bottomNavigationBar: _BottomNav(),
     );
   }
+}
 
-  // — AppBar con degradado en la imagen de cabecera —
-  SliverAppBar _buildAppBar(BuildContext context) {
-    return SliverAppBar(
-      expandedHeight: 180,
-      pinned: true,
-      backgroundColor: AppColors.primary,
-      flexibleSpace: FlexibleSpaceBar(
-        title: const Text(
-          'Bienvenido',
-          style: TextStyle(color: AppColors.textOnDark, fontSize: 18),
-        ),
-        background: Container(
-          decoration: const BoxDecoration(
-            gradient: LinearGradient(
-              colors: [AppColors.primaryDark, AppColors.primaryLight],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
+// — Barra superior con nombre de la app y notificaciones —
+class _TopBar extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+      decoration: const BoxDecoration(
+        color: AppColors.primary,
+        borderRadius: BorderRadius.vertical(bottom: Radius.circular(24)),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          // Nombre de la app — 
+          const Text(
+            'AIYORI',
+            style: TextStyle(
+              color: AppColors.textOnDark,
+              fontSize: 22,
+              fontWeight: FontWeight.bold,
+              letterSpacing: 0.5,
             ),
           ),
-        ),
+          IconButton(
+            icon: const Icon(Icons.notifications_outlined, color: AppColors.textOnDark),
+            onPressed: () {},
+          ),
+        ],
       ),
-      actions: [
-        IconButton(
-          icon: const Icon(Icons.notifications_outlined, color: AppColors.textOnDark),
-          onPressed: () {},
-        ),
-      ],
     );
   }
 }
 
-// — Tarjeta de bienvenida destacada —
-class _WelcomeCard extends StatelessWidget {
+// — Banner de bienvenida —
+class _WelcomeBanner extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [AppColors.primary, AppColors.primaryLight],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
+        //deprecated, pero da un efecto sutil de fondo, se puede ajustar o eliminar
+        color: AppColors.primary.withOpacity(0.08),
         borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.primary.withOpacity(0.35),
-            blurRadius: 16,
-            offset: const Offset(0, 6),
-          ),
-        ],
+        border: Border.all(color: AppColors.primary.withOpacity(0.15)),
       ),
       child: Row(
         children: [
+          // Ícono decorativo
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: AppColors.primary,
+              borderRadius: BorderRadius.circular(14),
+            ),
+            child: const Icon(Icons.waving_hand_rounded, color: Colors.white, size: 24),
+          ),
+          const SizedBox(width: 16),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: const [
-                Text('¡Hola de nuevo!',
-                    style: TextStyle(color: AppColors.textOnDark, fontSize: 20, fontWeight: FontWeight.bold)),
-                SizedBox(height: 6),
-                Text('Aquí está tu resumen del día.',
-                    style: TextStyle(color: AppColors.accentSoft, fontSize: 13)),
+                Text(
+                  '¡Bienvenido de nuevo!',
+                  style: TextStyle(
+                    color: AppColors.primary,
+                    fontSize: 17,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                SizedBox(height: 4),
+                Text(
+                  'Aquí está todo listo para ti. ¿Qué haremos hoy?',
+                  style: TextStyle(
+                    color: AppColors.textSecondary,
+                    fontSize: 13,
+                  ),
+                ),
               ],
             ),
           ),
-          const Icon(Icons.emoji_nature_rounded, size: 52, color: AppColors.accentSoft),
         ],
       ),
     );
   }
 }
 
-// — Título de sección reutilizable —
-class _SectionTitle extends StatelessWidget {
-  final String title;
-  const _SectionTitle({required this.title});
+// — Etiqueta de seccion —
+class _SectionLabel extends StatelessWidget {
+  final String text;
+  const _SectionLabel(this.text);
 
   @override
   Widget build(BuildContext context) {
     return Text(
-      title,
+      text,
       style: const TextStyle(
-        fontSize: 16,
+        fontSize: 15,
         fontWeight: FontWeight.w700,
         color: AppColors.textPrimary,
-        letterSpacing: 0.3,
+        letterSpacing: 0.2,
       ),
     );
   }
 }
 
-// — Grid de acciones rápidas —
+// — Grid de acciones, placeholder iconos —
 class _QuickActionsGrid extends StatelessWidget {
-  // Datos de ejemplo; luego vendrán de un model/provider
   static const _items = [
-    {'icon': Icons.add_circle_outline, 'label': 'Nuevo'},
-    {'icon': Icons.search,             'label': 'Buscar'},
-    {'icon': Icons.bar_chart_rounded,  'label': 'Stats'},
-    {'icon': Icons.settings_outlined,  'label': 'Config'},
+    _ActionItem(icon: Icons.add_circle_outline,  label: 'Nuevo'),
+    _ActionItem(icon: Icons.search,              label: 'Buscar'),
+    _ActionItem(icon: Icons.bar_chart_rounded,   label: 'Stats'),
+    _ActionItem(icon: Icons.settings_outlined,   label: 'Config'),
   ];
 
   @override
   Widget build(BuildContext context) {
-    return GridView.count(
-      crossAxisCount: 4,
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      mainAxisSpacing: 8,
-      crossAxisSpacing: 8,
-      children: _items.map((item) => _ActionTile(
-        icon: item['icon'] as IconData,
-        label: item['label'] as String,
-      )).toList(),
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: _items.map((item) => _ActionTile(item: item)).toList(),
     );
   }
 }
 
-class _ActionTile extends StatelessWidget {
+class _ActionItem {
   final IconData icon;
   final String label;
-  const _ActionTile({required this.icon, required this.label});
+  const _ActionItem({required this.icon, required this.label});
+}
+
+class _ActionTile extends StatelessWidget {
+  final _ActionItem item;
+  const _ActionTile({required this.item});
 
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: () {},
       child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Container(
-            padding: const EdgeInsets.all(14),
+            padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: AppColors.primary.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(14),
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: AppColors.divider),
             ),
-            child: Icon(icon, color: AppColors.primary, size: 22),
+            child: Icon(item.icon, color: AppColors.primary, size: 24),
           ),
           const SizedBox(height: 6),
-          Text(label,
-              style: const TextStyle(fontSize: 11, color: AppColors.textSecondary)),
+          Text(item.label,
+              style: const TextStyle(fontSize: 12, color: AppColors.textSecondary)),
         ],
       ),
     );
   }
 }
 
-// — Lista de items recientes —
+// — Lista de elementos recientes —
 class _RecentList extends StatelessWidget {
-  // Placeholder; se conectará a un repositorio real
-  static const _items = ['Elemento 1', 'Elemento 2', 'Elemento 3'];
+  static const _items = [
+    _RecentItem(title: 'Elemento 1', subtitle: 'Hace 2h'),
+    _RecentItem(title: 'Elemento 2', subtitle: 'Ayer'),
+    _RecentItem(title: 'Elemento 3', subtitle: 'Hace 3 días'),
+  ];
 
   @override
   Widget build(BuildContext context) {
     return Column(
-      children: _items.map((name) => _RecentTile(name: name)).toList(),
+      children: _items
+          .map((item) => _RecentTile(item: item))
+          .toList(),
     );
   }
 }
 
+class _RecentItem {
+  final String title, subtitle;
+  const _RecentItem({required this.title, required this.subtitle});
+}
+
 class _RecentTile extends StatelessWidget {
-  final String name;
-  const _RecentTile({required this.name});
+  final _RecentItem item;
+  const _RecentTile({required this.item});
 
   @override
   Widget build(BuildContext context) {
-    return Card(
+    return Container(
       margin: const EdgeInsets.only(bottom: 10),
-      child: ListTile(
-        leading: CircleAvatar(
-          backgroundColor: AppColors.accentSoft,
-          child: const Icon(Icons.folder_outlined, color: AppColors.primary),
-        ),
-        title: Text(name, style: const TextStyle(color: AppColors.textPrimary)),
-        subtitle: const Text('Hace 2h', style: TextStyle(color: AppColors.textSecondary, fontSize: 12)),
-        trailing: const Icon(Icons.chevron_right, color: AppColors.textSecondary),
-        onTap: () {},
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: AppColors.divider),
+      ),
+      child: Row(
+        children: [
+          CircleAvatar(
+            radius: 20,
+            backgroundColor: AppColors.accent.withOpacity(0.15),
+            child: const Icon(Icons.folder_outlined, color: AppColors.primary, size: 18),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(item.title,
+                    style: const TextStyle(
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.textPrimary,
+                        fontSize: 14)),
+                Text(item.subtitle,
+                    style: const TextStyle(
+                        color: AppColors.textSecondary, fontSize: 12)),
+              ],
+            ),
+          ),
+          const Icon(Icons.chevron_right, color: AppColors.textSecondary, size: 18),
+        ],
       ),
     );
   }
 }
 
-// — Barra de nav inferior —
+// — Footer de contacto — 
+class _ContactFooter extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: AppColors.divider),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Encabezado
+          Row(
+            children: const [
+              Icon(Icons.support_agent_outlined, color: AppColors.primary, size: 20),
+              SizedBox(width: 8),
+              Text(
+                'Contacto Terapeuta',
+                style: TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.primary,
+                ),
+              ),
+            ],
+          ),
+          const Divider(height: 20, color: AppColors.divider),
+
+          // ——— Placeholder datos contacto, x ahora terapeuta? ———
+          _ContactRow(icon: Icons.person_outline,   label: 'Nombre',    value: 'Tu nombre completo'),
+          _ContactRow(icon: Icons.email_outlined,   label: 'Email',     value: 'tucorreo@ejemplo.com'),
+          _ContactRow(icon: Icons.phone_outlined,   label: 'Teléfono',  value: '+52 000 000 0000'),
+          _ContactRow(icon: Icons.language_outlined, label: 'Web',      value: 'www.tusitio.com'),
+          _ContactRow(icon: Icons.location_on_outlined, label: 'Ciudad', value: 'Tu ciudad, País'),
+          // —————————————————————————————
+        ],
+      ),
+    );
+  }
+}
+
+class _ContactRow extends StatelessWidget {
+  final IconData icon;
+  final String label, value;
+  const _ContactRow({required this.icon, required this.label, required this.value});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 6),
+      child: Row(
+        children: [
+          Icon(icon, size: 16, color: AppColors.primary),
+          const SizedBox(width: 10),
+          SizedBox(
+            width: 72,
+            child: Text(label,
+                style: const TextStyle(
+                    fontSize: 12,
+                    color: AppColors.textSecondary,
+                    fontWeight: FontWeight.w500)),
+          ),
+          Expanded(
+            child: Text(value,
+                style: const TextStyle(
+                    fontSize: 13,
+                    color: AppColors.textPrimary)),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// — Barra de navegación inferior —
 class _BottomNav extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    return BottomNavigationBar(
-      selectedItemColor: AppColors.primary,
-      unselectedItemColor: AppColors.textSecondary,
-      currentIndex: 0,
-      items: const [
-        BottomNavigationBarItem(icon: Icon(Icons.home_rounded),    label: 'Inicio'),
-        BottomNavigationBarItem(icon: Icon(Icons.explore_outlined), label: 'Explorar'),
-        BottomNavigationBarItem(icon: Icon(Icons.person_outline),   label: 'Perfil'),
-      ],
+    return Container(
+      decoration: const BoxDecoration(
+        border: Border(top: BorderSide(color: AppColors.divider)),
+      ),
+      child: BottomNavigationBar(
+        backgroundColor: Colors.white,
+        selectedItemColor: AppColors.primary,
+        unselectedItemColor: AppColors.textSecondary,
+        selectedFontSize: 11,
+        unselectedFontSize: 11,
+        currentIndex: 0,
+        elevation: 0,
+        items: const [
+          BottomNavigationBarItem(icon: Icon(Icons.home_rounded),     label: 'Inicio'),
+          BottomNavigationBarItem(icon: Icon(Icons.explore_outlined),  label: 'Explorar'),
+          BottomNavigationBarItem(icon: Icon(Icons.person_outline),    label: 'Perfil'),
+        ],
+      ),
     );
   }
 }
