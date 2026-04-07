@@ -5,9 +5,9 @@ class AppColors {
   AppColors._();
 
   // — Primarios —
-  static const Color primary        = Color(0xFF0E5149); // verde bosque
-  static const Color primaryLight   = Color(0xFF1A7A6E); // hover / estados
-  static const Color primaryDark    = Color(0xFF093D36); // pressed / sombras
+  static const Color primary     = Color(0xFF6EC1C2);
+  static const Color primaryLight  = Color(0xFF1A7A6E); // hover / estados
+  static const Color primaryDark = Color(0xFF0B1020);
 
   // — Acentos —
   static const Color accent         = Color(0xFF4DB6A4); // menta vibrante
@@ -31,4 +31,13 @@ class AppColors {
 
   // — Divisores —
   static const Color divider        = Color(0xFFCCDEDB);
+
+static const List<BoxShadow> softShadow = [
+  BoxShadow(
+    color: Color(0x14000000), // negro con opacidad baja
+    blurRadius: 12,
+    offset: Offset(0, 4),
+  ),
+];
+
 }

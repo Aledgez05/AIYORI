@@ -1,13 +1,12 @@
 import 'package:flutter/material.dart';
 import 'core/theme/app_theme.dart';
-import 'features/home/presentation/screens/home_screen.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'firebase_options.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:firebase_analytics/firebase_analytics.dart';
-
+import 'features/home/presentation/screens/auth_screen.dart';
 
 const bool _useEmulator = true;
 void main() async {
@@ -45,7 +44,7 @@ class MyApp extends StatelessWidget {
       navigatorObservers: [
         FirebaseAnalyticsObserver(analytics: analytics),
       ],
-      home: const HomeScreen(),
+      home: const AuthScreen(),
     );
   }
 }
