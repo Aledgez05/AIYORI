@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "983419112932",
+    "project_id": "mind-aiyori",
+    "storage_bucket": "mind-aiyori.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:983419112932:android:d4f30bbe3a54a56040cbf1",
+        "android_client_info": {
+          "package_name": "com.example.aiyori"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBltqYUGX4xB_5Jeny7SKEvn85d4uBQKiY"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
