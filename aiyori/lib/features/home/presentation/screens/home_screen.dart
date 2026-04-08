@@ -390,38 +390,32 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
-  Widget _featureCard({
+Widget _featureCard({
   required IconData icon,
   required String label,
   VoidCallback? onTap,
 }) {
-  return GestureDetector(
+  return _HoverCard(
     onTap: onTap,
-    child: Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: AppColors.card,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.divider),
-      ),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(icon, size: 18, color: AppColors.primary),
-          const SizedBox(height: 8),
-          Text(
-            label,
-            style: TextStyle(
-              color: AppColors.textPrimary, 
-              fontWeight: FontWeight.w500,
-              fontSize: 13,
-            ),
+    child: Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Icon(icon, size: 18, color: AppColors.primary),
+        const SizedBox(height: 8),
+        Text(
+          label,
+          style: TextStyle(
+            color: AppColors.textPrimary,
+            fontWeight: FontWeight.w500,
+            fontSize: 13,
           ),
-        ],
-      ),
+        ),
+      ],
     ),
   );
 }
+
+
 
   Widget _activityCard(String t, String d) {
     return _card(
@@ -455,6 +449,53 @@ class HomeScreen extends StatelessWidget {
     return const Padding(
       padding: EdgeInsets.symmetric(horizontal: 6),
       child: Text('·'),
+    );
+  }
+}
+
+class _HoverCard extends StatefulWidget {
+  final Widget child;
+  final VoidCallback? onTap;
+
+  const _HoverCard({required this.child, this.onTap});
+
+  @override
+  State<_HoverCard> createState() => _HoverCardState();
+}
+
+class _HoverCardState extends State<_HoverCard> {
+  bool isHovering = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return MouseRegion(
+      onEnter: (_) => setState(() => isHovering = true),
+      onExit: (_) => setState(() => isHovering = false),
+      child: GestureDetector(
+        onTap: widget.onTap,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: AppColors.card,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: AppColors.divider),
+            boxShadow: isHovering
+                ? [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.08),
+                      blurRadius: 12,
+                      offset: const Offset(0, 4),
+                    )
+                  ]
+                : [],
+          ),
+          transform: isHovering
+              ? (Matrix4.identity()..scale(1.03))
+              : Matrix4.identity(),
+          child: widget.child,
+        ),
+      ),
     );
   }
 }
