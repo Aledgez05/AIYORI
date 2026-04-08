@@ -3,8 +3,15 @@ import '../../../../../core/theme/app_colors.dart';
 import 'calendar_screen.dart';
 import 'checkin_screen.dart';
 
-class HomeScreen extends StatelessWidget {
+class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
+
+  @override
+  State<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends State<HomeScreen> {
+  int _selectedIndex = 0;
 
   @override
   Widget build(BuildContext context) {
@@ -52,11 +59,93 @@ class HomeScreen extends StatelessWidget {
                   );
                 },
               ),
+              
+              const SizedBox(height: 80), // Espacio para el hotbar
             ],
           ),
         ),
       ),
+      bottomNavigationBar: _buildBottomNavigationBar(),
     );
+  }
+
+  // ────────────────────────────────────────────
+  // BOTTOM NAVIGATION BAR
+  // ────────────────────────────────────────────
+  
+  Widget _buildBottomNavigationBar() {
+    return Container(
+      decoration: BoxDecoration(
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, -2),
+          ),
+        ],
+      ),
+      child: BottomNavigationBar(
+        currentIndex: _selectedIndex,
+        onTap: (index) {
+          setState(() => _selectedIndex = index);
+          _handleNavigation(index);
+        },
+        backgroundColor: Colors.white,
+        selectedItemColor: AppColors.primary,
+        unselectedItemColor: AppColors.textSecondary.withOpacity(0.6),
+        selectedLabelStyle: const TextStyle(
+          fontSize: 12,
+          fontWeight: FontWeight.w500,
+        ),
+        unselectedLabelStyle: const TextStyle(
+          fontSize: 12,
+          fontWeight: FontWeight.w400,
+        ),
+        type: BottomNavigationBarType.fixed,
+        elevation: 0,
+        items: const [
+          BottomNavigationBarItem(
+            icon: Icon(Icons.home_rounded),
+            label: 'Inicio',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.favorite_rounded),
+            label: 'Check-in',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.calendar_month_rounded),
+            label: 'Calendario',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.person_outline_rounded),
+            label: 'Perfil',
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _handleNavigation(int index) {
+    switch (index) {
+      case 0:
+        // Ya estamos en home
+        break;
+      case 1:
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => const CheckInScreen()),
+        );
+        break;
+      case 2:
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => const CalendarScreen()),
+        );
+        break;
+      case 3:
+        // Navegar a perfil (por implementar)
+        break;
+    }
   }
 
   // ────────────────────────────────────────────
@@ -99,30 +188,144 @@ class HomeScreen extends StatelessWidget {
   Widget _emergenciaButton() {
     return GestureDetector(
       onTap: () {
-        // TODO: acción real
+        _showEmergencyDialog();
       },
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
         decoration: BoxDecoration(
-          color: AppColors.error,
+          gradient: const LinearGradient(
+            colors: [Color(0xFFE57373), Color(0xFFEF5350)],
+          ),
           borderRadius: BorderRadius.circular(14),
+          boxShadow: [
+            BoxShadow(
+              color: AppColors.error.withOpacity(0.3),
+              blurRadius: 12,
+              offset: const Offset(0, 4),
+            ),
+          ],
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: const [
             Icon(Icons.warning_rounded, color: Colors.white, size: 18),
-            SizedBox(width: 8),
+            SizedBox(width: 6),
             Text(
               'EMERGENCIA',
               style: TextStyle(
                 color: Colors.white,
                 fontWeight: FontWeight.w700,
-                fontSize: 15,
-                letterSpacing: 1.4,
+                fontSize: 13,
+                letterSpacing: 1.2,
               ),
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  void _showEmergencyDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20),
+        ),
+        title: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: AppColors.error.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: const Icon(
+                Icons.warning_rounded,
+                color: AppColors.error,
+                size: 24,
+              ),
+            ),
+            const SizedBox(width: 12),
+            const Text(
+              '¿Necesitas ayuda inmediata?',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'No estás solo. Hay personas dispuestas a escucharte.',
+              style: TextStyle(fontSize: 14),
+            ),
+            const SizedBox(height: 16),
+            _emergencyContact(
+              'Línea de Prevención del Suicidio',
+              '988',
+            ),
+            const SizedBox(height: 8),
+            _emergencyContact(
+              'Emergencias',
+              '911',
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text(
+              'Cerrar',
+              style: TextStyle(color: AppColors.textSecondary),
+            ),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              // Llamar al 911
+              Navigator.pop(context);
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.error,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+            child: const Text('Llamar ahora'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _emergencyContact(String label, String number) {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(
+            label,
+            style: const TextStyle(fontWeight: FontWeight.w500),
+          ),
+          Text(
+            number,
+            style: TextStyle(
+              fontWeight: FontWeight.bold,
+              color: AppColors.primary,
+              fontSize: 18,
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -151,55 +354,43 @@ class HomeScreen extends StatelessWidget {
               mainAxisSpacing: 10,
               children: [
                 _featureCard(
-                  icon: Icons.favorite,
+                  icon: Icons.favorite_rounded,
                   label: 'Check-in',
                   onTap: () {
-                     Navigator.push(
+                    Navigator.push(
                       context,
                       MaterialPageRoute(
                         builder: (_) => const CheckInScreen(),
-                        ),
-                         );
-                         },
-                         ),
-
+                      ),
+                    );
+                  },
+                ),
                 _featureCard(
-                  icon: Icons.calendar_today,
+                  icon: Icons.calendar_today_rounded,
                   label: 'Calendario',
                   onTap: () {
                     Navigator.push(
                       context,
                       MaterialPageRoute(
                         builder: (_) => const CalendarScreen(),
-                        ),
-                         );
-                          },
-                          ),
-                          
-                 _featureCard(
-                  icon: Icons.calendar_today,
-                  label: 'Medicacion',
+                      ),
+                    );
+                  },
+                ),
+                _featureCard(
+                  icon: Icons.medication_rounded,
+                  label: 'Medicación',
                   onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => const CalendarScreen(),
-                        ),
-                         );
-                          },
-                          ),
-                 _featureCard(
-                  icon: Icons.calendar_today,
+                    // Navegar a medicación
+                  },
+                ),
+                _featureCard(
+                  icon: Icons.notifications_rounded,
                   label: 'Recordatorios',
                   onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => const CalendarScreen(),
-                        ),
-                         );
-                          },
-                          ),
+                    // Navegar a recordatorios
+                  },
+                ),
               ],
             );
           },
@@ -269,9 +460,7 @@ class HomeScreen extends StatelessWidget {
               color: AppColors.textPrimary,
             ),
           ),
-
           const SizedBox(height: 12),
-
           Row(
             children: [
               Expanded(child: _breathStep('4', 'Inhala')),
@@ -281,9 +470,7 @@ class HomeScreen extends StatelessWidget {
               Expanded(child: _breathStep('4', 'Exhala')),
             ],
           ),
-
           const SizedBox(height: 12),
-
           SizedBox(
             width: double.infinity,
             child: ElevatedButton(
@@ -291,6 +478,9 @@ class HomeScreen extends StatelessWidget {
                 backgroundColor: AppColors.primary,
                 foregroundColor: Colors.white,
                 padding: const EdgeInsets.symmetric(vertical: 13),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
               ),
               onPressed: () {},
               child: const Text('Iniciar ejercicio'),
@@ -303,25 +493,50 @@ class HomeScreen extends StatelessWidget {
 
   Widget _activitiesCard() {
     return _card(
-      child: LayoutBuilder(
-        builder: (context, constraints) {
-          int count = constraints.maxWidth > 500 ? 3 : 2;
-
-          return GridView.count(
-            crossAxisCount: count,
-            childAspectRatio: 1.4,
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              _activityCard('Caminar', '5 min'),
-              _activityCard('Agua', '2 min'),
-              _activityCard('Música', '3 min'),
-              _activityCard('Estiramiento', '5 min'),
-              _activityCard('Escribir', '3 min'),
-              _activityCard('Llamar', '10 min'),
+              Text(
+                'Actividades rápidas',
+                style: TextStyle(
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.textPrimary,
+                ),
+              ),
+              Text(
+                'Ver todas',
+                style: TextStyle(
+                  fontSize: 12,
+                  color: AppColors.primary,
+                ),
+              ),
             ],
-          );
-        },
+          ),
+          const SizedBox(height: 12),
+          LayoutBuilder(
+            builder: (context, constraints) {
+              int count = constraints.maxWidth > 500 ? 3 : 2;
+
+              return GridView.count(
+                crossAxisCount: count,
+                childAspectRatio: 1.4,
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                crossAxisSpacing: 8,
+                mainAxisSpacing: 8,
+                children: [
+                  _activityCard('Caminar', '5 min', Icons.directions_walk_rounded),
+                  _activityCard('Agua', '2 min', Icons.water_drop_rounded),
+                  _activityCard('Música', '3 min', Icons.music_note_rounded),
+                  _activityCard('Estiramiento', '5 min', Icons.accessibility_new_rounded),
+                ],
+              );
+            },
+          ),
+        ],
       ),
     );
   }
@@ -390,65 +605,103 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
-Widget _featureCard({
-  required IconData icon,
-  required String label,
-  VoidCallback? onTap,
-}) {
-  return _HoverCard(
-    onTap: onTap,
-    child: Column(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        Icon(icon, size: 18, color: AppColors.primary),
-        const SizedBox(height: 8),
-        Text(
-          label,
-          style: TextStyle(
-            color: AppColors.textPrimary,
-            fontWeight: FontWeight.w500,
-            fontSize: 13,
-          ),
-        ),
-      ],
-    ),
-  );
-}
-
-
-
-  Widget _activityCard(String t, String d) {
-    return _card(
+  Widget _featureCard({
+    required IconData icon,
+    required String label,
+    VoidCallback? onTap,
+  }) {
+    return _HoverCard(
+      onTap: onTap,
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.circle, size: 10, color: AppColors.primary),
-          const SizedBox(height: 6),
-          Text(t, style: TextStyle(color: AppColors.textPrimary)),
-          Text(d, style: TextStyle(color: AppColors.textPrimary)),
+          Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: AppColors.primary.withOpacity(0.08),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Icon(icon, size: 22, color: AppColors.primary),
+          ),
+          const SizedBox(height: 10),
+          Text(
+            label,
+            style: TextStyle(
+              color: AppColors.textPrimary,
+              fontWeight: FontWeight.w500,
+              fontSize: 13,
+            ),
+          ),
         ],
       ),
     );
   }
 
-  Widget _breathStep(String n, String l) {
+  Widget _activityCard(String title, String duration, IconData icon) {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(icon, size: 20, color: AppColors.primary),
+          const SizedBox(height: 6),
+          Text(
+            title,
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w500,
+              color: AppColors.textPrimary,
+            ),
+          ),
+          Text(
+            duration,
+            style: TextStyle(
+              fontSize: 11,
+              color: AppColors.textSecondary,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _breathStep(String number, String label) {
     return Column(
       children: [
-        Text(n,
-            style: TextStyle(
-              fontSize: 24,
-              fontWeight: FontWeight.bold,
-              color: AppColors.primary,
-            )),
-        Text(l, style: TextStyle(color: AppColors.textSecondary)),
+        Text(
+          number,
+          style: TextStyle(
+            fontSize: 22,
+            fontWeight: FontWeight.bold,
+            color: AppColors.primary,
+          ),
+        ),
+        const SizedBox(height: 2),
+        Text(
+          label,
+          style: TextStyle(
+            fontSize: 11,
+            color: AppColors.textSecondary,
+          ),
+        ),
       ],
     );
   }
 
   Widget _stepSep() {
-    return const Padding(
-      padding: EdgeInsets.symmetric(horizontal: 6),
-      child: Text('·'),
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 6),
+      child: Text(
+        '·',
+        style: TextStyle(
+          fontSize: 20,
+          color: AppColors.textSecondary.withOpacity(0.5),
+        ),
+      ),
     );
   }
 }
@@ -491,7 +744,7 @@ class _HoverCardState extends State<_HoverCard> {
                 : [],
           ),
           transform: isHovering
-              ? (Matrix4.identity()..scale(1.03))
+              ? (Matrix4.identity()..scale(1.02))
               : Matrix4.identity(),
           child: widget.child,
         ),
