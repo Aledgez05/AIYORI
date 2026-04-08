@@ -1,394 +1,460 @@
 import 'package:flutter/material.dart';
 import '../../../../../core/theme/app_colors.dart';
-import 'meds_track_screen.dart';
+import 'calendar_screen.dart';
+import 'checkin_screen.dart';
 
-class HomeScreen extends StatefulWidget {
+class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
-
-  @override
-  State<HomeScreen> createState() => _HomeScreenState();
-}
-
-class _HomeScreenState extends State<HomeScreen> {
-  Widget _buildQuickActionsGrid(BuildContext context) {
-    const items = [
-      _ActionItem(icon: Icons.add_circle_outline, label: 'New'),
-      _ActionItem(icon: Icons.medical_services_outlined, label: 'Log Medication'),
-      _ActionItem(icon: Icons.search, label: 'Search'),
-      _ActionItem(icon: Icons.bar_chart_rounded, label: 'Stats'),
-      _ActionItem(icon: Icons.settings_outlined, label: 'Settings'),
-    ];
-
-    return Wrap(
-      spacing: 12,
-      runSpacing: 12,
-      children: items
-          .map((item) => _ActionTile(
-                item: item,
-                onTap: () => _onActionTap(context, item.label),
-              ))
-          .toList(),
-    );
-  }
-
-  void _onActionTap(BuildContext context, String label) {
-    switch (label) {
-      case 'Log Medication':
-        Navigator.push(
-          context,
-          MaterialPageRoute(builder: (_) => const MedsTrackScreen()),
-        );
-        break;
-      default:
-        break;
-    }
-  }
-
-  void _onBottomNavTap(BuildContext context, int index) {
-    if (index == 1) {
-      Navigator.push(
-        context,
-        MaterialPageRoute(builder: (_) => const MedsTrackScreen()),
-      );
-    }
-  }
-
-  Widget _buildBottomNav(BuildContext context) {
-    return Container(
-      decoration: const BoxDecoration(
-        border: Border(top: BorderSide(color: AppColors.divider)),
-      ),
-      child: BottomNavigationBar(
-        backgroundColor: Colors.white,
-        selectedItemColor: AppColors.primary,
-        unselectedItemColor: AppColors.textSecondary,
-        type: BottomNavigationBarType.fixed,
-        elevation: 8,
-        currentIndex: 0,
-        onTap: (index) => _onBottomNavTap(context, index),
-        items: const [
-          BottomNavigationBarItem(icon: Icon(Icons.home_rounded), label: 'Home'),
-          BottomNavigationBarItem(icon: Icon(Icons.calendar_today_outlined), label: 'Med Track'),
-          BottomNavigationBarItem(icon: Icon(Icons.explore_outlined), label: 'Explore'),
-          BottomNavigationBarItem(icon: Icon(Icons.person_outline), label: 'Profile'),
-        ],
-      ),
-    );
-  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.surface,
       body: SafeArea(
-        child: Column(
-          children: [
-            _TopBar(),
-            Expanded(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _WelcomeBanner(),
-                    const SizedBox(height: 28),
-                    _SectionLabel('Quick Actions'),
-                    const SizedBox(height: 12),
-                    _buildQuickActionsGrid(context),
-                    const SizedBox(height: 28),
-                    _SectionLabel('Recent'),
-                    const SizedBox(height: 12),
-                    _RecentList(),
-                    const SizedBox(height: 32),
-                    _ContactFooter(),
-                    const SizedBox(height: 16),
-                  ],
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // ── Top bar ──────────────────────────
+              Row(
+                children: [
+                  Expanded(child: _headerCard()),
+                  const SizedBox(width: 16),
+                  _emergenciaButton(),
+                ],
+              ),
+
+              const SizedBox(height: 20),
+
+              // ── Responsive layout ─────────────────
+              LayoutBuilder(
+                builder: (context, constraints) {
+                  final isWide = constraints.maxWidth > 640;
+
+                  if (isWide) {
+                    return Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Expanded(child: _leftColumn()),
+                        const SizedBox(width: 20),
+                        Expanded(child: _rightColumn()),
+                      ],
+                    );
+                  }
+
+                  return Column(
+                    children: [
+                      _leftColumn(),
+                      const SizedBox(height: 20),
+                      _rightColumn(),
+                    ],
+                  );
+                },
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  // ────────────────────────────────────────────
+  // TOP
+  // ────────────────────────────────────────────
+
+  Widget _headerCard() {
+    return _card(
+      child: Row(
+        children: [
+          _iconBox(Icons.favorite_rounded),
+          const SizedBox(width: 12),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Tu bienestar importa',
+                style: TextStyle(
+                  fontWeight: FontWeight.w700,
+                  fontSize: 15,
+                  color: AppColors.textSecondary,
                 ),
+              ),
+              Text(
+                'Hola, bienvenida',
+                style: TextStyle(
+                  fontSize: 13,
+                  color: AppColors.textSecondary,
+                ),
+              ),
+            ],
+          ),
+          const Spacer(),
+          _pill('Hoy'),
+        ],
+      ),
+    );
+  }
+
+  Widget _emergenciaButton() {
+    return GestureDetector(
+      onTap: () {
+        // TODO: acción real
+      },
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+        decoration: BoxDecoration(
+          color: AppColors.error,
+          borderRadius: BorderRadius.circular(14),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: const [
+            Icon(Icons.warning_rounded, color: Colors.white, size: 18),
+            SizedBox(width: 8),
+            Text(
+              'EMERGENCIA',
+              style: TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.w700,
+                fontSize: 15,
+                letterSpacing: 1.4,
               ),
             ),
           ],
         ),
       ),
-      bottomNavigationBar: _buildBottomNav(context),
     );
   }
-}
 
-// TOP BAR
-class _TopBar extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-      decoration: const BoxDecoration(
-        color: AppColors.primaryDark,
-        borderRadius: BorderRadius.vertical(bottom: Radius.circular(28)),
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          const Text(
-            'AIYORI',
-            style: TextStyle(
-              color: Colors.white,
-              fontSize: 20,
-              fontWeight: FontWeight.w700,
-              letterSpacing: 1.2,
-            ),
-          ),
-          IconButton(
-            icon: const Icon(Icons.notifications_outlined, color: Colors.white),
-            onPressed: () {},
-          ),
-        ],
-      ),
-    );
-  }
-}
+  // ────────────────────────────────────────────
+  // LEFT
+  // ────────────────────────────────────────────
 
-// WELCOME BANNER
-class _WelcomeBanner extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: AppColors.primary.withOpacity(0.12),
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: AppColors.softShadow,
-      ),
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: AppColors.primary,
-              borderRadius: BorderRadius.circular(14),
-            ),
-            child: const Icon(Icons.favorite_rounded, color: Colors.white, size: 22),
-          ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: const [
-                Text(
-                  'Welcome back!',
-                  style: TextStyle(
-                    color: AppColors.primary,
-                    fontSize: 17,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                SizedBox(height: 4),
-                Text(
-                  'Everything is ready for you. What will we do today?',
-                  style: TextStyle(
-                    color: AppColors.textSecondary,
-                    fontSize: 13,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-// SECTION LABEL
-class _SectionLabel extends StatelessWidget {
-  final String text;
-  const _SectionLabel(this.text);
-
-  @override
-  Widget build(BuildContext context) {
-    return Text(
-      text,
-      style: const TextStyle(
-        fontSize: 15,
-        fontWeight: FontWeight.w700,
-        color: AppColors.textPrimary,
-      ),
-    );
-  }
-}
-
-class _ActionItem {
-  final IconData icon;
-  final String label;
-  const _ActionItem({required this.icon, required this.label});
-}
-
-// ACTION TILE
-class _ActionTile extends StatelessWidget {
-  final _ActionItem item;
-  final VoidCallback? onTap;
-
-  const _ActionTile({required this.item, this.onTap});
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Column(
-        children: [
-          Container(
-            width: 70,
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(18),
-              boxShadow: AppColors.softShadow,
-            ),
-            child: Icon(item.icon, color: AppColors.primary, size: 24),
-          ),
-          const SizedBox(height: 6),
-          SizedBox(
-            width: 70,
-            child: Text(
-              item.label,
-              textAlign: TextAlign.center,
-              style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-// RECENT LIST
-class _RecentList extends StatelessWidget {
-  static const _items = [
-    _RecentItem(title: 'Medication A', subtitle: '2h ago'),
-    _RecentItem(title: 'Medication B', subtitle: 'Yesterday'),
-    _RecentItem(title: 'Medication C', subtitle: '3 days ago'),
-  ];
-
-  @override
-  Widget build(BuildContext context) {
+  Widget _leftColumn() {
     return Column(
-      children: _items.map((item) => _RecentTile(item: item)).toList(),
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _sectionLabel('Funciones'),
+        const SizedBox(height: 10),
+
+        LayoutBuilder(
+          builder: (context, constraints) {
+            int count = constraints.maxWidth > 500 ? 3 : 2;
+
+            return GridView.count(
+              crossAxisCount: count,
+              childAspectRatio: 1.3,
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              crossAxisSpacing: 10,
+              mainAxisSpacing: 10,
+              children: [
+                _featureCard(
+                  icon: Icons.favorite,
+                  label: 'Check-in',
+                  onTap: () {
+                     Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => const CheckInScreen(),
+                        ),
+                         );
+                         },
+                         ),
+
+                _featureCard(
+                  icon: Icons.calendar_today,
+                  label: 'Calendario',
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => const CalendarScreen(),
+                        ),
+                         );
+                          },
+                          ),
+                          
+                 _featureCard(
+                  icon: Icons.calendar_today,
+                  label: 'Medicacion',
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => const CalendarScreen(),
+                        ),
+                         );
+                          },
+                          ),
+                 _featureCard(
+                  icon: Icons.calendar_today,
+                  label: 'Recordatorios',
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => const CalendarScreen(),
+                        ),
+                         );
+                          },
+                          ),
+              ],
+            );
+          },
+        ),
+      ],
     );
   }
-}
 
-class _RecentItem {
-  final String title, subtitle;
-  const _RecentItem({required this.title, required this.subtitle});
-}
+  // ────────────────────────────────────────────
+  // RIGHT
+  // ────────────────────────────────────────────
 
-// RECENT TILE
-class _RecentTile extends StatelessWidget {
-  final _RecentItem item;
-  const _RecentTile({required this.item});
+  Widget _rightColumn() {
+    return Column(
+      children: [
+        _pinCard(),
+        const SizedBox(height: 14),
+        _breathingCard(),
+        const SizedBox(height: 14),
+        _activitiesCard(),
+      ],
+    );
+  }
 
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 10),
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: AppColors.softShadow,
-      ),
+  Widget _pinCard() {
+    return _card(
       child: Row(
         children: [
-          CircleAvatar(
-            radius: 20,
-            backgroundColor: AppColors.primary.withOpacity(0.15),
-            child: const Icon(Icons.medication_outlined, color: AppColors.primary, size: 18),
-          ),
+          _iconBox(Icons.lock_rounded),
           const SizedBox(width: 12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(item.title,
-                    style: const TextStyle(
-                        fontWeight: FontWeight.w600,
-                        color: AppColors.textPrimary,
-                        fontSize: 14)),
-                Text(item.subtitle,
-                    style: const TextStyle(
-                        color: AppColors.textSecondary, fontSize: 12)),
+                Text(
+                  'Acceso Temporal (PIN)',
+                  style: TextStyle(
+                    fontWeight: FontWeight.w600,
+                    fontSize: 14,
+                    color: AppColors.textPrimary,
+                  ),
+                ),
+                Text(
+                  'Gestiona quién ve tus registros',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: AppColors.textSecondary,
+                  ),
+                ),
               ],
             ),
           ),
-          const Icon(Icons.chevron_right, color: AppColors.textSecondary, size: 18),
         ],
       ),
     );
   }
-}
 
-// CONTACT FOOTER
-class _ContactFooter extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: AppColors.softShadow,
-      ),
+  Widget _breathingCard() {
+    return _card(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          Text(
+            'Respiración 4-5-4',
+            style: TextStyle(
+              fontWeight: FontWeight.w700,
+              color: AppColors.textPrimary,
+            ),
+          ),
+
+          const SizedBox(height: 12),
+
           Row(
-            children: const [
-              Icon(Icons.support_agent_outlined, color: AppColors.primary),
-              SizedBox(width: 8),
-              Text(
-                'Therapist Contact',
-                style: TextStyle(
-                  fontSize: 15,
-                  fontWeight: FontWeight.bold,
-                  color: AppColors.primary,
-                ),
-              ),
+            children: [
+              Expanded(child: _breathStep('4', 'Inhala')),
+              _stepSep(),
+              Expanded(child: _breathStep('5', 'Sostén')),
+              _stepSep(),
+              Expanded(child: _breathStep('4', 'Exhala')),
             ],
           ),
+
           const SizedBox(height: 12),
-          const Divider(),
-          _ContactRow(icon: Icons.person_outline, label: 'Name', value: 'Your full name'),
-          _ContactRow(icon: Icons.email_outlined, label: 'Email', value: 'your@email.com'),
-          _ContactRow(icon: Icons.phone_outlined, label: 'Phone', value: '+52 000 000 0000'),
+
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primary,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(vertical: 13),
+              ),
+              onPressed: () {},
+              child: const Text('Iniciar ejercicio'),
+            ),
+          ),
         ],
       ),
     );
   }
-}
 
-class _ContactRow extends StatelessWidget {
-  final IconData icon;
-  final String label, value;
+  Widget _activitiesCard() {
+    return _card(
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          int count = constraints.maxWidth > 500 ? 3 : 2;
 
-  const _ContactRow({required this.icon, required this.label, required this.value});
+          return GridView.count(
+            crossAxisCount: count,
+            childAspectRatio: 1.4,
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            children: [
+              _activityCard('Caminar', '5 min'),
+              _activityCard('Agua', '2 min'),
+              _activityCard('Música', '3 min'),
+              _activityCard('Estiramiento', '5 min'),
+              _activityCard('Escribir', '3 min'),
+              _activityCard('Llamar', '10 min'),
+            ],
+          );
+        },
+      ),
+    );
+  }
 
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 6),
-      child: Row(
+  // ────────────────────────────────────────────
+  // UI BASE
+  // ────────────────────────────────────────────
+
+  Widget _card({required Widget child}) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppColors.card,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppColors.divider),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.03),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          )
+        ],
+      ),
+      child: child,
+    );
+  }
+
+  Widget _iconBox(IconData icon) {
+    return Container(
+      width: 38,
+      height: 38,
+      decoration: BoxDecoration(
+        color: AppColors.primary.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Icon(icon, color: AppColors.primary, size: 18),
+    );
+  }
+
+  Widget _pill(String label) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      decoration: BoxDecoration(
+        color: AppColors.primary.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Text(
+        label,
+        style: TextStyle(
+          fontSize: 11,
+          fontWeight: FontWeight.w600,
+          color: AppColors.textPrimary,
+        ),
+      ),
+    );
+  }
+
+  Widget _sectionLabel(String label) {
+    return Text(
+      label.toUpperCase(),
+      style: TextStyle(
+        fontSize: 11,
+        fontWeight: FontWeight.w700,
+        color: AppColors.textSecondary,
+      ),
+    );
+  }
+
+  Widget _featureCard({
+  required IconData icon,
+  required String label,
+  VoidCallback? onTap,
+}) {
+  return GestureDetector(
+    onTap: onTap,
+    child: Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: AppColors.card,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AppColors.divider),
+      ),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(icon, size: 16, color: AppColors.primary),
-          const SizedBox(width: 10),
-          SizedBox(
-            width: 70,
-            child: Text(label,
-                style: const TextStyle(fontSize: 12, color: AppColors.textSecondary)),
-          ),
-          Expanded(
-            child: Text(value,
-                style: const TextStyle(fontSize: 13, color: AppColors.textPrimary)),
+          Icon(icon, size: 18, color: AppColors.primary),
+          const SizedBox(height: 8),
+          Text(
+            label,
+            style: TextStyle(
+              color: AppColors.textPrimary, 
+              fontWeight: FontWeight.w500,
+              fontSize: 13,
+            ),
           ),
         ],
       ),
+    ),
+  );
+}
+
+  Widget _activityCard(String t, String d) {
+    return _card(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(Icons.circle, size: 10, color: AppColors.primary),
+          const SizedBox(height: 6),
+          Text(t, style: TextStyle(color: AppColors.textPrimary)),
+          Text(d, style: TextStyle(color: AppColors.textPrimary)),
+        ],
+      ),
+    );
+  }
+
+  Widget _breathStep(String n, String l) {
+    return Column(
+      children: [
+        Text(n,
+            style: TextStyle(
+              fontSize: 24,
+              fontWeight: FontWeight.bold,
+              color: AppColors.primary,
+            )),
+        Text(l, style: TextStyle(color: AppColors.textSecondary)),
+      ],
+    );
+  }
+
+  Widget _stepSep() {
+    return const Padding(
+      padding: EdgeInsets.symmetric(horizontal: 6),
+      child: Text('·'),
     );
   }
 }
