@@ -32,12 +32,58 @@ class AppColors {
   // — Divisores —
   static const Color divider        = Color(0xFFCCDEDB);
 
-static const List<BoxShadow> softShadow = [
-  BoxShadow(
-    color: Color(0x14000000), // negro con opacidad baja
-    blurRadius: 12,
-    offset: Offset(0, 4),
-  ),
-];
+  static const List<BoxShadow> softShadow = [
+    BoxShadow(
+      color: Color(0x14000000), // negro con opacidad baja
+      blurRadius: 12,
+      offset: Offset(0, 4),
+    ),
+  ];
 
+  // ========== NUEVAS ADICIONES ==========
+  
+  // — Colores adicionales para variantes —
+  static const Color primaryLighter = Color(0xFFB8DFDE);
+  static const Color surfaceLight = Color(0xFFF8FCFB);
+  
+  // — Degradados predefinidos —
+  static const LinearGradient primaryGradient = LinearGradient(
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+    colors: [
+      Color(0xFF6EC1C2),
+      Color(0xFF8DD3D4),
+    ],
+  );
+
+  static const LinearGradient backgroundGradient = LinearGradient(
+    begin: Alignment.topCenter,
+    end: Alignment.bottomCenter,
+    colors: [
+      Color(0xFFE8F3F1),
+      Color(0xFFF5FAF9),
+      Color(0xFFFFFFFF),
+    ],
+    stops: [0.0, 0.5, 1.0],
+  );
+
+  // Color adicional para el nuevo diseño
+  static const Color primaryVariant = Color(0xFF8DD3D4);
+  
+  // — Sombras adicionales —
+  static List<BoxShadow> get mediumShadow => [
+        BoxShadow(
+          color: const Color(0xFF6EC1C2).withOpacity(0.12),
+          blurRadius: 20,
+          offset: const Offset(0, 8),
+        ),
+      ];
+
+  static List<BoxShadow> get lightShadow => [
+        BoxShadow(
+          color: Colors.black.withOpacity(0.03),
+          blurRadius: 15,
+          offset: const Offset(0, 5),
+        ),
+      ];
 }
