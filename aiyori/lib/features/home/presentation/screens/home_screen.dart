@@ -1,3 +1,4 @@
+import 'package:aiyori/features/home/presentation/screens/meds_track_screen.dart';
 import 'package:flutter/material.dart';
 import '../../../../../core/theme/app_colors.dart';
 import 'calendar_screen.dart';
@@ -381,7 +382,12 @@ class _HomeScreenState extends State<HomeScreen> {
                   icon: Icons.medication_rounded,
                   label: 'Medicación',
                   onTap: () {
-                    // Navegar a medicación
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => const MedsTrackScreen(),
+                      ),
+                    );
                   },
                 ),
                 _featureCard(
