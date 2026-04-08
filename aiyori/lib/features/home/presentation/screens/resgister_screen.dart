@@ -41,7 +41,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Logo y título con animación sutil
+                // Logo y titulo con animacion (no se si dejarlo)
                 TweenAnimationBuilder<double>(
                   tween: Tween(begin: 0.0, end: 1.0),
                   duration: const Duration(milliseconds: 800),
@@ -111,7 +111,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
                 const SizedBox(height: 40),
 
-                // Sección: ¿Cómo quieres usar la app?
+                // Sección: Como quieres usar la app?
                 _buildSectionTitle('Elige tu propósito'),
                 const SizedBox(height: 16),
 
@@ -158,11 +158,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
                 const SizedBox(height: 36),
 
-                // Sección: Datos personales
+                // Seccion: Datos personales
                 _buildSectionTitle('Tus datos'),
                 const SizedBox(height: 16),
 
-                // Campos de texto con diseño refinado
+                // Campos de texto con disenio refinado
                 _buildTextField(
                   controller: nameController,
                   hint: 'Nombre completo',
