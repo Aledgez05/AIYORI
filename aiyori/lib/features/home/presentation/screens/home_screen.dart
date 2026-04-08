@@ -77,7 +77,7 @@ class HomeScreen extends StatelessWidget {
                 style: TextStyle(
                   fontWeight: FontWeight.w700,
                   fontSize: 15,
-                  color: AppColors.textPrimary,
+                  color: AppColors.textSecondary,
                 ),
               ),
               Text(
@@ -179,30 +179,6 @@ class HomeScreen extends StatelessWidget {
                  _featureCard(
                   icon: Icons.calendar_today,
                   label: 'Medicacion',
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => const CalendarScreen(),
-                        ),
-                         );
-                          },
-                          ),
-                 _featureCard(
-                  icon: Icons.calendar_today,
-                  label: 'Predicciones',
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => const CalendarScreen(),
-                        ),
-                         );
-                          },
-                          ),
-                 _featureCard(
-                  icon: Icons.calendar_today,
-                  label: 'Historial',
                   onTap: () {
                     Navigator.push(
                       context,
@@ -397,7 +373,7 @@ class HomeScreen extends StatelessWidget {
         style: TextStyle(
           fontSize: 11,
           fontWeight: FontWeight.w600,
-          color: AppColors.primary,
+          color: AppColors.textPrimary,
         ),
       ),
     );
@@ -433,7 +409,14 @@ class HomeScreen extends StatelessWidget {
         children: [
           Icon(icon, size: 18, color: AppColors.primary),
           const SizedBox(height: 8),
-          Text(label),
+          Text(
+            label,
+            style: TextStyle(
+              color: AppColors.textPrimary, 
+              fontWeight: FontWeight.w500,
+              fontSize: 13,
+            ),
+          ),
         ],
       ),
     ),
@@ -448,7 +431,7 @@ class HomeScreen extends StatelessWidget {
           Icon(Icons.circle, size: 10, color: AppColors.primary),
           const SizedBox(height: 6),
           Text(t, style: TextStyle(color: AppColors.textPrimary)),
-          Text(d, style: TextStyle(color: AppColors.textSecondary)),
+          Text(d, style: TextStyle(color: AppColors.textPrimary)),
         ],
       ),
     );
