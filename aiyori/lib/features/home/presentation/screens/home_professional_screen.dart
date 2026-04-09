@@ -573,7 +573,7 @@ class _HomeProfessionalScreenState extends State<HomeProfessionalScreen> {
         ),
         child: Row(
           children: [
-            Container(
+            SizedBox(
               width: 50,
               child: Column(
                 children: [

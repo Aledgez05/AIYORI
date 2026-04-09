@@ -96,7 +96,7 @@ class _MedsTrackScreenState extends State<MedsTrackScreen> {
       if (!mounted) return;
       setState(() { _isSaving = false; _saved = true; });
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Medicamentos guardados ✓')),
+        const SnackBar(content: Text('Medications saved ✓')),
       );
     } catch (e) {
       if (!mounted) return;
@@ -116,7 +116,7 @@ class _MedsTrackScreenState extends State<MedsTrackScreen> {
       backgroundColor: AppColors.surface,
       appBar: AppBar(
         backgroundColor: AppColors.primary,
-        title: const Text('Medicamentos de hoy',
+        title: const Text('Today\'s Medications',
             style: TextStyle(color: AppColors.textOnDark)),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: AppColors.textOnDark),
@@ -134,13 +134,13 @@ class _MedsTrackScreenState extends State<MedsTrackScreen> {
                 Expanded(
                   child: _meds.isEmpty
                       ? const Center(
-                          child: Text('No hay medicamentos para hoy',
+                          child: Text('No medications for today',
                               style: TextStyle(color: AppColors.textSecondary)),
                         )
                       : ListView.separated(
                           padding: const EdgeInsets.fromLTRB(16, 8, 16, 100),
                           itemCount: _meds.length,
-                          separatorBuilder: (_, __) => const SizedBox(height: 8),
+                          separatorBuilder: (_, _) => const SizedBox(height: 8),
                           itemBuilder: (_, i) => _MedTile(
                             med: _meds[i],
                             onChanged: (val) => setState(() {
@@ -222,7 +222,7 @@ class _ProgressCard extends StatelessWidget {
             children: [
               Expanded(
                 child: Text(
-                  '$taken de $total medicamentos tomados',
+                  '$taken of $total medications taken',
                   style: const TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.w600,

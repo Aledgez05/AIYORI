@@ -423,7 +423,7 @@ class _AppointmentsScreenState extends State<AppointmentsScreen>
         ),
         child: Row(
           children: [
-            Container(
+            SizedBox(
               width: 60,
               child: Column(
                 children: [

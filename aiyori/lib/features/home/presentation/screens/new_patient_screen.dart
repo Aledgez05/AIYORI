@@ -307,7 +307,7 @@ class _NewPatientScreenState extends State<NewPatientScreen> {
         ],
       ),
       child: DropdownButtonFormField<String>(
-        value: value,
+        initialValue: value,
         decoration: InputDecoration(
           labelText: label,
           labelStyle: TextStyle(

@@ -3,6 +3,7 @@ import 'package:table_calendar/table_calendar.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/services/firebase_service.dart';
 
 class CalendarScreen extends StatefulWidget {
   const CalendarScreen({super.key});
@@ -12,6 +13,8 @@ class CalendarScreen extends StatefulWidget {
 }
 
 class _CalendarScreenState extends State<CalendarScreen> {
+  final FirebaseService _firebaseService = FirebaseService();
+  
   DateTime _focusedDay = DateTime.now();
   DateTime _selectedDay = DateTime.utc(
     DateTime.now().year,
@@ -24,30 +27,13 @@ class _CalendarScreenState extends State<CalendarScreen> {
 
   DateTime _toUtc(DateTime d) => DateTime.utc(d.year, d.month, d.day);
 
-  String get _uid => FirebaseAuth.instance.currentUser!.uid;
-
   // Stream del rango visible (mes actual ± 2 meses)
   Stream<QuerySnapshot<Map<String, dynamic>>> _buildStream() {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) {
       return Stream.empty();
     }
-    final uid = user.uid;
-    final start = DateTime.utc(_focusedDay.year, _focusedDay.month - 2, 1);
-    final end = DateTime.utc(_focusedDay.year, _focusedDay.month + 3, 0);
-
-    final startId =
-        '${start.year}-${start.month.toString().padLeft(2, '0')}-01';
-    final endId =
-        '${end.year}-${end.month.toString().padLeft(2, '0')}-${end.day.toString().padLeft(2, '0')}';
-
-    return FirebaseFirestore.instance
-        .collection('users')
-        .doc(uid)
-        .collection('daily_records')
-        .where(FieldPath.documentId, isGreaterThanOrEqualTo: startId)
-        .where(FieldPath.documentId, isLessThanOrEqualTo: endId)
-        .snapshots();
+    return _firebaseService.getMonthlyRecordsStream(_focusedDay) ?? Stream.empty();
   }
 
   void _updateCache(QuerySnapshot<Map<String, dynamic>> qs) {
@@ -96,7 +82,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
           if (user == null) {
             return const Center(
               child: Text(
-                'Usuario no autenticado. Por favor, inicia sesión.',
+                'User not authenticated. Please sign in.',
                 style: TextStyle(color: AppColors.textPrimary),
               ),
             );
@@ -282,7 +268,7 @@ class _DayDetailPanel extends StatelessWidget {
           Icon(Icons.calendar_today_outlined,
               size: 36, color: AppColors.textSecondary),
           SizedBox(height: 8),
-          Text('Sin registros para este día',
+          Text('No records for this day',
               style:
                   TextStyle(fontSize: 14, color: AppColors.textSecondary)),
         ],
@@ -361,13 +347,13 @@ class _DayDetailPanel extends StatelessWidget {
               const Icon(Icons.medication_outlined,
                   size: 18, color: AppColors.primary),
               const SizedBox(width: 8),
-              const Text('Medicamentos',
+              const Text('Medications',
                   style: TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.w600,
                       color: AppColors.textPrimary)),
               const Spacer(),
-              Text('$taken/${meds.length} tomadas',
+              Text('$taken/${meds.length} taken',
                   style: TextStyle(
                       fontSize: 12,
                       fontWeight: FontWeight.w600,

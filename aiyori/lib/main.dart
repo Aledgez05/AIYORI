@@ -6,14 +6,29 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:firebase_analytics/firebase_analytics.dart';
+import 'package:intl/date_symbol_data_local.dart';
 import 'features/home/presentation/screens/auth_screen.dart';
+import 'features/home/presentation/screens/home_screen.dart';
 
-const bool _useEmulator = true;
+const bool _useEmulator = false; // Use cloud Firebase
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  
+  // Initialize locale data for date formatting
+  await initializeDateFormatting('es_ES', null);
+  
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
+  
+  // Configure offline persistence for Firestore
+  await FirebaseFirestore.instance.enableNetwork();
+  FirebaseFirestore.instance.settings = const Settings(
+    persistenceEnabled: true,
+    cacheSizeBytes: Settings.CACHE_SIZE_UNLIMITED,
+  );
+  
+  // Only use emulator if explicitly enabled
   if (_useEmulator) _connectEmulators();
   runApp(const MyApp());
 }
@@ -32,7 +47,6 @@ class MyApp extends StatelessWidget {
 
   static final FirebaseAnalytics _analytics = FirebaseAnalytics.instance;
 
-
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
@@ -44,7 +58,25 @@ class MyApp extends StatelessWidget {
       navigatorObservers: [
         FirebaseAnalyticsObserver(analytics: _analytics),
       ],
-      home: const AuthScreen(),
+      home: StreamBuilder<User?>(
+        stream: FirebaseAuth.instance.authStateChanges(),
+        builder: (context, snapshot) {
+          // Mientras se verifica autenticación
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Scaffold(
+              body: Center(child: CircularProgressIndicator()),
+            );
+          }
+
+          // Si hay usuario autenticado, ir a HomeScreen
+          if (snapshot.hasData && snapshot.data != null) {
+            return const HomeScreen();
+          }
+
+          // Si no hay usuario, mostrar AuthScreen
+          return const AuthScreen();
+        },
+      ),
     );
   }
 }

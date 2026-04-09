@@ -44,7 +44,7 @@ class _CheckInScreenState extends State<CheckInScreen> {
 
     try {
       final uid = FirebaseAuth.instance.currentUser?.uid;
-      if (uid == null) throw Exception('Usuario no autenticado');
+      if (uid == null) throw Exception('User not authenticated');
 
       final today = DateTime.now();
       final docId =
@@ -212,7 +212,7 @@ class _EmotionScaleImage extends StatelessWidget {
             'assets/images/emotion_scale.png',
             width: double.infinity,
             fit: BoxFit.fitWidth,
-            errorBuilder: (_, __, ___) => _ImagePlaceholder(),
+            errorBuilder: (_, _, _) => _ImagePlaceholder(),
           ),
         ],
       ),
