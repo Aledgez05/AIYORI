@@ -30,7 +30,7 @@ void _connectEmulators() {
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
-  static final FirebaseAnalytics analytics = FirebaseAnalytics.instance;
+  static final FirebaseAnalytics _analytics = FirebaseAnalytics.instance;
 
 
   @override
@@ -42,7 +42,7 @@ class MyApp extends StatelessWidget {
       darkTheme: AppTheme.dark,
       themeMode: ThemeMode.system,
       navigatorObservers: [
-        FirebaseAnalyticsObserver(analytics: analytics),
+        FirebaseAnalyticsObserver(analytics: _analytics),
       ],
       home: const AuthScreen(),
     );

@@ -339,7 +339,7 @@ class _HomeScreenState extends State<HomeScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _sectionLabel('Funciones'),
+        _sectionLabel('Quick Actions'),
         const SizedBox(height: 10),
 
         LayoutBuilder(
@@ -356,7 +356,7 @@ class _HomeScreenState extends State<HomeScreen> {
               children: [
                 _featureCard(
                   icon: Icons.favorite_rounded,
-                  label: 'Check-in',
+                  label: 'Emotional Check-in',
                   onTap: () {
                     Navigator.push(
                       context,
@@ -368,7 +368,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
                 _featureCard(
                   icon: Icons.calendar_today_rounded,
-                  label: 'Calendario',
+                  label: 'My calendar',
                   onTap: () {
                     Navigator.push(
                       context,
@@ -380,7 +380,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
                 _featureCard(
                   icon: Icons.medication_rounded,
-                  label: 'Medicación',
+                  label: 'Today\'s Meds',
                   onTap: () {
                     Navigator.push(
                       context,
@@ -392,7 +392,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
                 _featureCard(
                   icon: Icons.notifications_rounded,
-                  label: 'Recordatorios',
+                  label: 'Reminders',
                   onTap: () {
                     // Navegar a recordatorios
                   },
