@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import '../../../../../core/theme/app_colors.dart';
 import 'home_screen.dart';
 import 'resgister_screen.dart';
@@ -11,8 +12,6 @@ class AuthScreen extends StatefulWidget {
 }
 
 class _AuthScreenState extends State<AuthScreen> {
-  bool isLogin = true;
-
   final emailController = TextEditingController();
   final passwordController = TextEditingController();
 
@@ -27,7 +26,7 @@ class _AuthScreenState extends State<AuthScreen> {
             children: [
               const SizedBox(height: 40),
 
-              // LOGO / NOMBRE
+              // LOGO / NAME
               const Text(
                 'AIYORI',
                 style: TextStyle(
@@ -60,12 +59,14 @@ class _AuthScreenState extends State<AuthScreen> {
                 ),
                 child: Column(
                   children: [
-                    // TOGGLE
-                    Row(
-                      children: [
-                        _buildTab('Login', isLogin),
-                        _buildTab('Sign Up', !isLogin),
-                      ],
+                    // TITLE
+                    const Text(
+                      'Sign In',
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.textPrimary,
+                      ),
                     ),
 
                     const SizedBox(height: 20),
@@ -89,20 +90,11 @@ class _AuthScreenState extends State<AuthScreen> {
 
                     const SizedBox(height: 20),
 
-                    // BUTTON
+                    // LOGIN BUTTON
                     SizedBox(
                       width: double.infinity,
                       child: ElevatedButton(
-                        onPressed: () {
-                          if (isLogin) {
-                            _handleLogin();
-                            } else {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(builder: (_) => const RegisterScreen()),
-                                );
-                              }
-                              },
+                        onPressed: _handleLogin,
                         style: ElevatedButton.styleFrom(
                           backgroundColor: AppColors.primary,
                           padding: const EdgeInsets.symmetric(vertical: 14),
@@ -111,9 +103,9 @@ class _AuthScreenState extends State<AuthScreen> {
                           ),
                           elevation: 0,
                         ),
-                        child: Text(
-                          isLogin ? 'Login' : 'Create Account',
-                          style: const TextStyle(
+                        child: const Text(
+                          'Sign In',
+                          style: TextStyle(
                             fontWeight: FontWeight.w600,
                             color: Colors.white,
                           ),
@@ -121,20 +113,67 @@ class _AuthScreenState extends State<AuthScreen> {
                       ),
                     ),
 
-                    const SizedBox(height: 12),
+                    const SizedBox(height: 16),
 
-                    // SWITCH TEXT
-                    GestureDetector(
-                      onTap: () {
-                        setState(() => isLogin = !isLogin);
-                      },
-                      child: Text(
-                        isLogin
-                            ? "Don't have an account? Sign up"
-                            : "Already have an account? Login",
-                        style: const TextStyle(
-                          color: AppColors.primary,
-                          fontSize: 12,
+                    // DIVIDER
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Divider(
+                            color: AppColors.divider,
+                            thickness: 1,
+                          ),
+                        ),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 12),
+                          child: Text(
+                            'or',
+                            style: TextStyle(
+                              color: AppColors.textSecondary,
+                              fontSize: 12,
+                            ),
+                          ),
+                        ),
+                        Expanded(
+                          child: Divider(
+                            color: AppColors.divider,
+                            thickness: 1,
+                          ),
+                        ),
+                      ],
+                    ),
+
+                    const SizedBox(height: 16),
+
+                    // SIGN UP BUTTON
+                    SizedBox(
+                      width: double.infinity,
+                      child: OutlinedButton(
+                        onPressed: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => const RegisterScreen(),
+                            ),
+                          );
+                        },
+                        style: OutlinedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          side: const BorderSide(
+                            color: AppColors.primary,
+                            width: 2,
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(14),
+                          ),
+                        ),
+                        child: const Text(
+                          'Create Account',
+                          style: TextStyle(
+                            fontWeight: FontWeight.w600,
+                            color: AppColors.primary,
+                            fontSize: 16,
+                          ),
                         ),
                       ),
                     ),
@@ -142,32 +181,6 @@ class _AuthScreenState extends State<AuthScreen> {
                 ),
               ),
             ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildTab(String text, bool active) {
-    return Expanded(
-      child: GestureDetector(
-        onTap: () {
-          setState(() => isLogin = text == 'Login');
-        },
-        child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 10),
-          decoration: BoxDecoration(
-            color: active ? AppColors.primary.withOpacity(0.1) : Colors.transparent,
-            borderRadius: BorderRadius.circular(10),
-          ),
-          child: Center(
-            child: Text(
-              text,
-              style: TextStyle(
-                color: active ? AppColors.primary : AppColors.textSecondary,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
           ),
         ),
       ),
@@ -198,11 +211,62 @@ class _AuthScreenState extends State<AuthScreen> {
     );
   }
 
-  // aqui luego va lo de firebase auth, por ahora solo navega al home screen :)
-  void _handleLogin() {
-  Navigator.pushReplacement(
-    context,
-    MaterialPageRoute(builder: (_) => const HomeScreen()),
-  );
-}
+  // Firebase Authentication
+  void _handleLogin() async {
+    final email = emailController.text.trim();
+    final password = passwordController.text.trim();
+
+    if (email.isEmpty || password.isEmpty) {
+      _showErrorDialog('Please fill in all fields');
+      return;
+    }
+
+    try {
+      final credential = await FirebaseAuth.instance.signInWithEmailAndPassword(
+        email: email,
+        password: password,
+      );
+
+      if (credential.user != null) {
+        if (mounted) {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (_) => const HomeScreen()),
+          );
+        }
+      }
+    } on FirebaseAuthException catch (e) {
+      String message = 'Authentication error';
+      if (e.code == 'user-not-found') {
+        message = 'User not found. Please create an account first.';
+      } else if (e.code == 'wrong-password') {
+        message = 'Incorrect password. Please try again.';
+      } else if (e.code == 'invalid-credential') {
+        message = 'Invalid email or password.';
+      } else if (e.code == 'too-many-requests') {
+        message = 'Too many login attempts. Please try again later.';
+      } else {
+        message = 'Error: ${e.message}';
+      }
+      _showErrorDialog(message);
+    } catch (e) {
+      _showErrorDialog('Error: ${e.toString()}');
+    }
+  }
+
+  void _showErrorDialog(String message) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Error'),
+        content: Text(message),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('OK'),
+          ),
+        ],
+      ),
+    );
+  }
 }

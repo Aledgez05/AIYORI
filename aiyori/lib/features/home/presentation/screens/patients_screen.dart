@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import '../../../../../core/theme/app_colors.dart';
 import 'patient_detail_screen.dart';
 import 'new_patient_screen.dart';
 

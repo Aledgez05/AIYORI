@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'home_screen.dart';
 import 'home_professional_screen.dart';
 
@@ -16,6 +19,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final emailController = TextEditingController();
   final pinController = TextEditingController();
   final confirmPinController = TextEditingController();
+  final passwordController = TextEditingController();
+  final confirmPasswordController = TextEditingController();
   bool acceptedTerms = false;
 
   @override
@@ -86,7 +91,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       ),
                       const SizedBox(height: 20),
                       const Text(
-                        'Crear cuenta',
+                        'Create Account',
                         style: TextStyle(
                           fontSize: 32,
                           fontWeight: FontWeight.w300,
@@ -97,7 +102,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       ),
                       const SizedBox(height: 8),
                       Text(
-                        'Comienza tu camino hacia el bienestar',
+                        'Start your wellness journey today',
                         style: TextStyle(
                           fontSize: 16,
                           color: const Color(0xFF1C3D3A).withOpacity(0.6),
@@ -112,7 +117,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 const SizedBox(height: 40),
 
                 // Sección: Como quieres usar la app?
-                _buildSectionTitle('Elige tu propósito'),
+                _buildSectionTitle('Select Your Purpose'),
                 const SizedBox(height: 16),
 
                 // Opciones de rol con mejor diseño
@@ -120,11 +125,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   children: [
                     Expanded(
                       child: _buildRoleOption(
-                        title: 'Bienestar personal',
-                        subtitle: 'Para tu crecimiento emocional',
+                        title: 'Personal Wellness',
+                        subtitle: 'For your emotional growth',
                         icon: Icons.self_improvement_rounded,
-                        isSelected: selectedRole == 'Bienestar emocional',
-                        onTap: () => setState(() => selectedRole = 'Bienestar emocional'),
+                        isSelected: selectedRole == 'Personal Wellness',
+                        onTap: () => setState(() => selectedRole = 'Personal Wellness'),
                       ),
                     ),
                   ],
@@ -136,21 +141,21 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   children: [
                     Expanded(
                       child: _buildRoleOption(
-                        title: 'Profesional',
-                        subtitle: 'Monitoreo de pacientes',
+                        title: 'Professional',
+                        subtitle: 'Patient monitoring',
                         icon: Icons.medical_services_rounded,
-                        isSelected: selectedRole == 'Profesional de la salud',
-                        onTap: () => setState(() => selectedRole = 'Profesional de la salud'),
+                        isSelected: selectedRole == 'Healthcare Professional',
+                        onTap: () => setState(() => selectedRole = 'Healthcare Professional'),
                       ),
                     ),
                     const SizedBox(width: 12),
                     Expanded(
                       child: _buildRoleOption(
-                        title: 'Paciente',
-                        subtitle: 'Seguimiento profesional',
+                        title: 'Patient',
+                        subtitle: 'Professional follow-up',
                         icon: Icons.favorite_rounded,
-                        isSelected: selectedRole == 'Paciente',
-                        onTap: () => setState(() => selectedRole = 'Paciente'),
+                        isSelected: selectedRole == 'Patient',
+                        onTap: () => setState(() => selectedRole = 'Patient'),
                       ),
                     ),
                   ],
@@ -159,19 +164,19 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 const SizedBox(height: 36),
 
                 // Seccion: Datos personales
-                _buildSectionTitle('Tus datos'),
+                _buildSectionTitle('Your Information'),
                 const SizedBox(height: 16),
 
                 // Campos de texto con disenio refinado
                 _buildTextField(
                   controller: nameController,
-                  hint: 'Nombre completo',
+                  hint: 'Full Name',
                   icon: Icons.person_outline_rounded,
                 ),
                 const SizedBox(height: 12),
                 _buildTextField(
                   controller: emailController,
-                  hint: 'Correo electrónico',
+                  hint: 'Email Address',
                   icon: Icons.email_outlined,
                   keyboardType: TextInputType.emailAddress,
                 ),
@@ -181,23 +186,50 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     Expanded(
                       child: _buildTextField(
                         controller: pinController,
-                        hint: 'PIN 4 dígitos',
+                        hint: 'PIN (4 digits)',
                         icon: Icons.lock_outline_rounded,
                         obscure: true,
                         keyboardType: TextInputType.number,
+                        maxLength: 4,
+                        inputFormatters: [
+                          FilteringTextInputFormatter.digitsOnly,
+                        ],
                       ),
                     ),
                     const SizedBox(width: 12),
                     Expanded(
                       child: _buildTextField(
                         controller: confirmPinController,
-                        hint: 'Confirmar PIN',
+                        hint: 'Confirm PIN',
                         icon: Icons.lock_outline_rounded,
                         obscure: true,
                         keyboardType: TextInputType.number,
+                        maxLength: 4,
+                        inputFormatters: [
+                          FilteringTextInputFormatter.digitsOnly,
+                        ],
                       ),
                     ),
                   ],
+                ),
+
+                const SizedBox(height: 16),
+
+                // Password Section
+                _buildTextField(
+                  controller: passwordController,
+                  hint: 'Password (at least 8 characters)',
+                  icon: Icons.vpn_key_rounded,
+                  obscure: true,
+                ),
+
+                const SizedBox(height: 12),
+
+                _buildTextField(
+                  controller: confirmPasswordController,
+                  hint: 'Confirm Password',
+                  icon: Icons.vpn_key_rounded,
+                  obscure: true,
                 ),
 
                 const SizedBox(height: 20),
@@ -231,9 +263,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
                             height: 1.4,
                           ),
                           children: [
-                            const TextSpan(text: 'He leído y acepto los '),
+                            const TextSpan(text: 'I agree to the '),
                             TextSpan(
-                              text: 'Términos y Condiciones',
+                              text: 'Terms & Conditions',
                               style: TextStyle(
                                 color: const Color(0xFF6EC1C2),
                                 fontWeight: FontWeight.w500,
@@ -280,7 +312,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       ),
                     ),
                     child: const Text(
-                      'Comenzar',
+                      'Create Account',
                       style: TextStyle(
                         fontSize: 17,
                         fontWeight: FontWeight.w500,
@@ -301,7 +333,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       foregroundColor: const Color(0xFF1C3D3A).withOpacity(0.6),
                     ),
                     child: const Text(
-                      'Ya tengo una cuenta',
+                      'I Already Have an Account',
                       style: TextStyle(
                         fontSize: 15,
                         fontWeight: FontWeight.w400,
@@ -421,6 +453,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
     required IconData icon,
     bool obscure = false,
     TextInputType keyboardType = TextInputType.text,
+    int? maxLength,
+    List<TextInputFormatter>? inputFormatters,
   }) {
     return Container(
       decoration: BoxDecoration(
@@ -438,6 +472,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
         controller: controller,
         obscureText: obscure,
         keyboardType: keyboardType,
+        maxLength: maxLength,
+        inputFormatters: inputFormatters,
         style: const TextStyle(
           fontSize: 15,
           color: Color(0xFF1C3D3A),
@@ -455,6 +491,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
             color: const Color(0xFF6EC1C2).withOpacity(0.6),
             size: 22,
           ),
+          counterText: '', // Hide character counter
           border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(18),
             borderSide: BorderSide.none,
@@ -475,7 +512,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: const Text(
-            'Por favor, selecciona un propósito',
+            'Please select a purpose',
             style: TextStyle(color: Colors.white),
           ),
           backgroundColor: const Color(0xFF1C3D3A),
@@ -493,7 +530,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: const Text(
-            'Debes aceptar los términos y condiciones',
+            'You must accept the Terms & Conditions',
             style: TextStyle(color: Colors.white),
           ),
           backgroundColor: const Color(0xFF1C3D3A),
@@ -507,29 +544,190 @@ class _RegisterScreenState extends State<RegisterScreen> {
       return;
     }
 
-    // Navegación según rol
-    if (selectedRole == 'Profesional de la salud') {
-      Navigator.pushReplacement(
-        context,
-        PageRouteBuilder(
-          pageBuilder: (context, animation, secondaryAnimation) =>
-              const HomeProfessionalScreen(),
-          transitionsBuilder: (context, animation, secondaryAnimation, child) {
-            return FadeTransition(opacity: animation, child: child);
-          },
-        ),
-      );
-    } else {
-      Navigator.pushReplacement(
-        context,
-        PageRouteBuilder(
-          pageBuilder: (context, animation, secondaryAnimation) =>
-              const HomeScreen(),
-          transitionsBuilder: (context, animation, secondaryAnimation, child) {
-            return FadeTransition(opacity: animation, child: child);
-          },
-        ),
-      );
+    // Validate required fields
+    final email = emailController.text.trim();
+    final pin = pinController.text.trim();
+    final confirmPin = confirmPinController.text.trim();
+    final password = passwordController.text.trim();
+    final confirmPassword = confirmPasswordController.text.trim();
+    final name = nameController.text.trim();
+
+    if (email.isEmpty || pin.isEmpty || name.isEmpty || password.isEmpty) {
+      _showErrorDialog('Please fill in all fields');
+      return;
     }
+
+    // Validate PIN (4 digits)
+    if (pin != confirmPin) {
+      _showErrorDialog('PINs do not match');
+      return;
+    }
+
+    if (pin.length != 4) {
+      _showErrorDialog('PIN must be exactly 4 digits');
+      return;
+    }
+
+    if (!RegExp(r'^\d{4}$').hasMatch(pin)) {
+      _showErrorDialog('PIN must contain only digits (0-9)');
+      return;
+    }
+
+    // Validate Password (stronger requirements)
+    if (password != confirmPassword) {
+      _showErrorDialog('Passwords do not match');
+      return;
+    }
+
+    if (password.length < 8) {
+      _showErrorDialog('Password must be at least 8 characters long');
+      return;
+    }
+
+    // Check for password strength (at least 1 uppercase, 1 lowercase, 1 number)
+    if (!RegExp(r'[A-Z]').hasMatch(password)) {
+      _showErrorDialog('Password must contain at least 1 uppercase letter');
+      return;
+    }
+
+    if (!RegExp(r'[a-z]').hasMatch(password)) {
+      _showErrorDialog('Password must contain at least 1 lowercase letter');
+      return;
+    }
+
+    if (!RegExp(r'\d').hasMatch(password)) {
+      _showErrorDialog('Password must contain at least 1 number');
+      return;
+    }
+
+    // Create user in Firebase
+    _createUserAndNavigate(
+      email: email,
+      password: password,
+      name: name,
+      role: selectedRole,
+      pin: pin,
+    );
+  }
+
+  Future<void> _createUserAndNavigate({
+    required String email,
+    required String password,
+    required String name,
+    required String role,
+    required String pin,
+  }) async {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => const AlertDialog(
+        content: Row(
+          children: [
+            CircularProgressIndicator(),
+            SizedBox(width: 16),
+            Text('Creating your account...'),
+          ],
+        ),
+      ),
+    );
+
+    try {
+      // 1. Create user in Firebase Auth (using strong password)
+      final userCredential =
+          await FirebaseAuth.instance.createUserWithEmailAndPassword(
+        email: email,
+        password: password,
+      );
+
+      final userId = userCredential.user!.uid;
+
+      // 2. Create user document in Firestore (storing PIN as well)
+      await FirebaseFirestore.instance
+          .collection('users')
+          .doc(userId)
+          .set({
+        'uid': userId,
+        'name': name,
+        'email': email,
+        'role': role,
+        'pin': pin,
+        'createdAt': Timestamp.now(),
+        'updatedAt': Timestamp.now(),
+      });
+
+      if (!mounted) return;
+      Navigator.pop(context); // Close loading dialog
+
+      // 3. Navigate based on role
+      if (role == 'Healthcare Professional') {
+        Navigator.pushReplacement(
+          context,
+          PageRouteBuilder(
+            pageBuilder: (context, animation, secondaryAnimation) =>
+                const HomeProfessionalScreen(),
+            transitionsBuilder:
+                (context, animation, secondaryAnimation, child) {
+              return FadeTransition(opacity: animation, child: child);
+            },
+          ),
+        );
+      } else {
+        Navigator.pushReplacement(
+          context,
+          PageRouteBuilder(
+            pageBuilder: (context, animation, secondaryAnimation) =>
+                const HomeScreen(),
+            transitionsBuilder:
+                (context, animation, secondaryAnimation, child) {
+              return FadeTransition(opacity: animation, child: child);
+            },
+          ),
+        );
+      }
+    } on FirebaseAuthException catch (e) {
+      if (!mounted) return;
+      Navigator.pop(context); // Close loading dialog
+
+      String message = 'Error creating account';
+      
+      if (e.code == 'weak-password') {
+        message = 'Your password is too weak. Use uppercase, lowercase, and numbers.';
+      } else if (e.code == 'email-already-in-use') {
+        message = 'This email is already registered. Try logging in instead.';
+      } else if (e.code == 'invalid-email') {
+        message = 'Please enter a valid email address.';
+      } else if (e.code == 'operation-not-allowed') {
+        message = 'Account creation is currently disabled. Please try again later.';
+      } else if (e.code == 'too-many-requests') {
+        message = 'Too many attempts. Please try again later.';
+      } else {
+        message = 'Firebase Auth Error: ${e.message}';
+      }
+      _showErrorDialog(message);
+    } on FirebaseException catch (e) {
+      if (!mounted) return;
+      Navigator.pop(context); // Close loading dialog
+      _showErrorDialog('Firebase Error: ${e.message}');
+    } catch (e) {
+      if (!mounted) return;
+      Navigator.pop(context); // Close loading dialog
+      _showErrorDialog('Error: ${e.toString()}');
+    }
+  }
+
+  void _showErrorDialog(String message) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Error'),
+        content: Text(message),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('OK'),
+          ),
+        ],
+      ),
+    );
   }
 }

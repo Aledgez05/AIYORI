@@ -1,5 +1,6 @@
 import 'package:aiyori/features/home/presentation/screens/meds_track_screen.dart';
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import '../../../../../core/theme/app_colors.dart';
 import 'calendar_screen.dart';
 import 'checkin_screen.dart';
@@ -30,6 +31,8 @@ class _HomeScreenState extends State<HomeScreen> {
                   Expanded(child: _headerCard()),
                   const SizedBox(width: 16),
                   _emergenciaButton(),
+                  const SizedBox(width: 12),
+                  _buildMenuButton(),
                 ],
               ),
 
@@ -339,7 +342,7 @@ class _HomeScreenState extends State<HomeScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _sectionLabel('Funciones'),
+        _sectionLabel('Quick Actions'),
         const SizedBox(height: 10),
 
         LayoutBuilder(
@@ -356,7 +359,7 @@ class _HomeScreenState extends State<HomeScreen> {
               children: [
                 _featureCard(
                   icon: Icons.favorite_rounded,
-                  label: 'Check-in',
+                  label: 'Emotional Check-in',
                   onTap: () {
                     Navigator.push(
                       context,
@@ -368,7 +371,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
                 _featureCard(
                   icon: Icons.calendar_today_rounded,
-                  label: 'Calendario',
+                  label: 'My calendar',
                   onTap: () {
                     Navigator.push(
                       context,
@@ -380,7 +383,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
                 _featureCard(
                   icon: Icons.medication_rounded,
-                  label: 'Medicación',
+                  label: 'Today\'s Meds',
                   onTap: () {
                     Navigator.push(
                       context,
@@ -392,7 +395,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
                 _featureCard(
                   icon: Icons.notifications_rounded,
-                  label: 'Recordatorios',
+                  label: 'Reminders',
                   onTap: () {
                     // Navegar a recordatorios
                   },
@@ -695,6 +698,63 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ),
       ],
+    );
+  }
+
+  Widget _buildMenuButton() {
+    return PopupMenuButton<String>(
+      onSelected: (value) async {
+        if (value == 'logout') {
+          _showLogoutDialog();
+        }
+      },
+      itemBuilder: (BuildContext context) => <PopupMenuEntry<String>>[
+        const PopupMenuItem<String>(
+          value: 'logout',
+          child: Row(
+            children: [
+              Icon(Icons.logout, size: 18),
+              SizedBox(width: 10),
+              Text('Sign Out'),
+            ],
+          ),
+        ),
+      ],
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        decoration: BoxDecoration(
+          color: AppColors.surface,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: AppColors.divider),
+        ),
+        child: const Icon(Icons.more_vert, size: 20, color: AppColors.textPrimary),
+      ),
+    );
+  }
+
+  void _showLogoutDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Sign Out'),
+        content: const Text('Are you sure you want to sign out?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () async {
+              Navigator.pop(context);
+              await FirebaseAuth.instance.signOut();
+            },
+            style: TextButton.styleFrom(
+              foregroundColor: Colors.red,
+            ),
+            child: const Text('Sign Out'),
+          ),
+        ],
+      ),
     );
   }
 
