@@ -3,6 +3,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../../../../core/theme/app_colors.dart';
 import 'calendar_screen.dart';
+import 'emotion_flower_screen.dart';
 
 class CheckInScreen extends StatefulWidget {
   const CheckInScreen({super.key});
@@ -13,8 +14,10 @@ class CheckInScreen extends StatefulWidget {
 
 class _CheckInScreenState extends State<CheckInScreen> {
   int? _selectedMood;
-  Color _selectedColor = const Color(0xFFB39DDB); // color por defecto
+  Color _selectedColor = const Color(0xFFB39DDB);
   bool _isSaving = false;
+  String? _selectedBaseEmotion;
+  String? _selectedSubEmotion;
 
   // Colores del picker ordenados por emoción (cálidos→fríos)
   static const List<Color> _colorOptions = [
@@ -32,11 +35,23 @@ class _CheckInScreenState extends State<CheckInScreen> {
 
   static const List<Map<String, dynamic>> _moods = [
     {'label': 'Muy mal', 'icon': Icons.sentiment_very_dissatisfied, 'index': 0},
-    {'label': 'Mal',     'icon': Icons.sentiment_dissatisfied,       'index': 1},
-    {'label': 'Neutral', 'icon': Icons.sentiment_neutral,            'index': 2},
-    {'label': 'Bien',    'icon': Icons.sentiment_satisfied,          'index': 3},
-    {'label': 'Muy bien','icon': Icons.sentiment_very_satisfied,     'index': 4},
+    {'label': 'Mal', 'icon': Icons.sentiment_dissatisfied, 'index': 1},
+    {'label': 'Neutral', 'icon': Icons.sentiment_neutral, 'index': 2},
+    {'label': 'Bien', 'icon': Icons.sentiment_satisfied, 'index': 3},
+    {'label': 'Muy bien', 'icon': Icons.sentiment_very_satisfied, 'index': 4},
   ];
+
+  // Mapeo de emociones de la flor a índices de mood
+  static const Map<String, int> _baseEmotionToMoodIndex = {
+    'Alegría': 4,
+    'Confianza': 4,
+    'Anticipación': 3,
+    'Sorpresa': 3,
+    'Miedo': 1,
+    'Tristeza': 1,
+    'Aversión': 1,
+    'Ira': 0,
+  };
 
   Future<void> _save() async {
     if (_selectedMood == null) return;
@@ -59,12 +74,13 @@ class _CheckInScreenState extends State<CheckInScreen> {
         'date': Timestamp.fromDate(DateTime.utc(today.year, today.month, today.day)),
         'moodIndex': _selectedMood,
         'moodLabel': _moods[_selectedMood!]['label'],
-        'moodColor': _selectedColor.value, // guardamos el int del color
+        'moodColor': _selectedColor.value,
+        'baseEmotion': _selectedBaseEmotion,
+        'subEmotion': _selectedSubEmotion,
       }, SetOptions(merge: true));
 
       if (!mounted) return;
 
-      // Transición crítica → CalendarScreen
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(builder: (_) => const CalendarScreen()),
@@ -73,8 +89,86 @@ class _CheckInScreenState extends State<CheckInScreen> {
       if (!mounted) return;
       setState(() => _isSaving = false);
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error al guardar: $e')),
+        SnackBar(
+          content: Text('Error al guardar: $e'),
+          backgroundColor: AppColors.error,
+          behavior: SnackBarBehavior.floating,
+        ),
       );
+    }
+  }
+
+  void _openEmotionFlower() async {
+    final result = await Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => const EmotionFlowerScreen()),
+    );
+
+    if (result != null && mounted) {
+      final baseEmotion = result['baseEmotion'] as String;
+      final subEmotion = result['subEmotion'] as String;
+      
+      // Obtener el color correspondiente a la emoción base
+      final emotionColor = _getEmotionColor(baseEmotion);
+      
+      setState(() {
+        _selectedBaseEmotion = baseEmotion;
+        _selectedSubEmotion = subEmotion;
+        _selectedMood = _baseEmotionToMoodIndex[baseEmotion] ?? 2;
+        _selectedColor = emotionColor;
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Row(
+            children: [
+              Container(
+                width: 12,
+                height: 12,
+                decoration: BoxDecoration(
+                  color: emotionColor,
+                  shape: BoxShape.circle,
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  'Seleccionaste: $baseEmotion - $subEmotion',
+                  style: const TextStyle(color: Colors.white),
+                ),
+              ),
+            ],
+          ),
+          backgroundColor: AppColors.primary,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+        ),
+      );
+    }
+  }
+
+  Color _getEmotionColor(String emotion) {
+    switch (emotion) {
+      case 'Alegría':
+        return const Color(0xFFFFD700);
+      case 'Confianza':
+        return const Color(0xFF66BB6A);
+      case 'Miedo':
+        return const Color(0xFF9C27B0);
+      case 'Sorpresa':
+        return const Color(0xFFFF9800);
+      case 'Tristeza':
+        return const Color(0xFF42A5F5);
+      case 'Aversión':
+        return const Color(0xFF8D6E63);
+      case 'Ira':
+        return const Color(0xFFEF5350);
+      case 'Anticipación':
+        return const Color(0xFFFFCA28);
+      default:
+        return const Color(0xFFB39DDB);
     }
   }
 
@@ -84,12 +178,15 @@ class _CheckInScreenState extends State<CheckInScreen> {
       backgroundColor: AppColors.surface,
       appBar: AppBar(
         backgroundColor: AppColors.primary,
-        title: const Text('Check-in emocional',
-            style: TextStyle(color: AppColors.textOnDark)),
+        title: const Text(
+          'Check-in emocional',
+          style: TextStyle(color: AppColors.textOnDark),
+        ),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: AppColors.textOnDark),
           onPressed: () => Navigator.maybePop(context),
         ),
+        elevation: 0,
       ),
       body: SafeArea(
         child: SingleChildScrollView(
@@ -101,20 +198,195 @@ class _CheckInScreenState extends State<CheckInScreen> {
               const Text(
                 '¿Cómo te sientes hoy?',
                 style: TextStyle(
-                  fontSize: 20,
+                  fontSize: 24,
                   fontWeight: FontWeight.bold,
                   color: AppColors.textPrimary,
                 ),
               ),
+              const SizedBox(height: 8),
+              Text(
+                'Selecciona tu estado de ánimo actual',
+                style: TextStyle(
+                  fontSize: 14,
+                  color: AppColors.textSecondary,
+                ),
+              ),
 
-              const SizedBox(height: 20),
+              const SizedBox(height: 24),
 
-              // ── Escala de emociones (imagen) ─────────────────────────────
-              _EmotionScaleImage(),
+              // ── Botón de Flor de Emociones (DESTACADO) ──────────────────
+              Container(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [
+                      AppColors.primary.withOpacity(0.1),
+                      AppColors.accent.withOpacity(0.1),
+                    ],
+                  ),
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(
+                    color: AppColors.primary.withOpacity(0.3),
+                    width: 2,
+                  ),
+                ),
+                child: Column(
+                  children: [
+                    const SizedBox(height: 16),
+                    const Icon(
+                      Icons.local_florist_rounded,
+                      size: 48,
+                      color: AppColors.primary,
+                    ),
+                    const SizedBox(height: 8),
+                    const Text(
+                      'Explorador de Emociones',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.textPrimary,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    const Text(
+                      'Descubre tu emoción con la flor interactiva',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: AppColors.textSecondary,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton.icon(
+                        onPressed: _openEmotionFlower,
+                        icon: const Icon(Icons.touch_app_rounded),
+                        label: const Text(
+                          'Abrir Flor de Emociones',
+                          style: TextStyle(fontSize: 16),
+                        ),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.primary,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                  ],
+                ),
+              ),
+
+              // ── Emoción seleccionada de la flor ─────────────────────────
+              if (_selectedBaseEmotion != null && _selectedSubEmotion != null)
+                Container(
+                  margin: const EdgeInsets.only(top: 16),
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: _selectedColor.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(
+                      color: _selectedColor.withOpacity(0.3),
+                      width: 1.5,
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 40,
+                        height: 40,
+                        decoration: BoxDecoration(
+                          color: _selectedColor,
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(
+                          Icons.check,
+                          color: Colors.white,
+                          size: 24,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Emoción seleccionada:',
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: AppColors.textSecondary,
+                              ),
+                            ),
+                            Text(
+                              '$_selectedBaseEmotion - $_selectedSubEmotion',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w600,
+                                color: _selectedColor,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      IconButton(
+                        onPressed: () {
+                          setState(() {
+                            _selectedBaseEmotion = null;
+                            _selectedSubEmotion = null;
+                          });
+                        },
+                        icon: const Icon(Icons.close, color: Colors.grey),
+                      ),
+                    ],
+                  ),
+                ),
+
+              const SizedBox(height: 28),
+
+              // ── Separador "o" ────────────────────────────────────────────
+              Row(
+                children: [
+                  Expanded(
+                    child: Divider(
+                      color: AppColors.divider,
+                      thickness: 1,
+                    ),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: Text(
+                      'O selecciona manualmente',
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: AppColors.textSecondary,
+                      ),
+                    ),
+                  ),
+                  Expanded(
+                    child: Divider(
+                      color: AppColors.divider,
+                      thickness: 1,
+                    ),
+                  ),
+                ],
+              ),
 
               const SizedBox(height: 20),
 
               // ── Selector de íconos de humor ──────────────────────────────
+              const Text(
+                'Estado general',
+                style: TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.textPrimary,
+                ),
+              ),
+              const SizedBox(height: 12),
+              
               _MoodSelector(
                 moods: _moods,
                 selectedMood: _selectedMood,
@@ -160,84 +432,30 @@ class _CheckInScreenState extends State<CheckInScreen> {
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(14),
                     ),
+                    elevation: _selectedMood != null ? 2 : 0,
                   ),
                   child: _isSaving
                       ? const SizedBox(
-                          width: 22, height: 22,
+                          width: 22,
+                          height: 22,
                           child: CircularProgressIndicator(
-                            strokeWidth: 2.5, color: Colors.white),
+                            strokeWidth: 2.5,
+                            color: Colors.white,
+                          ),
                         )
-                      : const Text('Guardar y ver calendario',
-                          style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600)),
+                      : const Text(
+                          'Guardar y ver calendario',
+                          style: TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
                 ),
               ),
+
+              const SizedBox(height: 16),
             ],
           ),
-        ),
-      ),
-    );
-  }
-}
-
-// ─── Imagen de escala emocional ───────────────────────────────────────────────
-
-class _EmotionScaleImage extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.divider),
-      ),
-      clipBehavior: Clip.antiAlias,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 14, 16, 8),
-            child: Text(
-              'Escala de emociones',
-              style: TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.w600,
-                color: AppColors.textSecondary,
-                letterSpacing: 0.3,
-              ),
-            ),
-          ),
-          // Reemplaza el Asset path con el tuyo real
-          Image.asset(
-            'assets/images/emotion_scale.png',
-            width: double.infinity,
-            fit: BoxFit.fitWidth,
-            errorBuilder: (_, _, _) => _ImagePlaceholder(),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _ImagePlaceholder extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      height: 120,
-      color: AppColors.surface,
-      child: const Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.image_outlined, size: 36, color: AppColors.textSecondary),
-            SizedBox(height: 6),
-            Text(
-              'Agrega tu imagen en\nassets/images/emotion_scale.png',
-              textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
-            ),
-          ],
         ),
       ),
     );
