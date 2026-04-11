@@ -41,16 +41,52 @@ class _CheckInScreenState extends State<CheckInScreen> {
     {'label': 'Muy bien', 'icon': Icons.sentiment_very_satisfied, 'index': 4},
   ];
 
-  // Mapeo de emociones de la flor a índices de mood
+  // Mapeo de emociones de la flor a índices de mood - CORREGIDO CON NOMBRES EN INGLÉS
   static const Map<String, int> _baseEmotionToMoodIndex = {
-    'Alegría': 4,
-    'Confianza': 4,
-    'Anticipación': 3,
-    'Sorpresa': 3,
-    'Miedo': 1,
-    'Tristeza': 1,
-    'Aversión': 1,
-    'Ira': 0,
+    'Joy': 4,           // Alegría
+    'Trust': 4,         // Confianza
+    'Anticipation': 3,  // Anticipación
+    'Surprise': 3,      // Sorpresa
+    'Fear': 1,          // Miedo
+    'Sadness': 1,       // Tristeza
+    'Disgust': 1,       // Aversión/Disgusto
+    'Anger': 0,         // Ira
+  };
+
+  // Mapeo de nombres en inglés a español para mostrar
+  static const Map<String, String> _emotionTranslations = {
+    'Joy': 'Alegría',
+    'Trust': 'Confianza',
+    'Anticipation': 'Anticipación',
+    'Surprise': 'Sorpresa',
+    'Fear': 'Miedo',
+    'Sadness': 'Tristeza',
+    'Disgust': 'Aversión',
+    'Anger': 'Ira',
+    'Optimism': 'Optimismo',
+    'Serenity': 'Serenidad',
+    'Love': 'Amor',
+    'Acceptance': 'Aceptación',
+    'Admiration': 'Admiración',
+    'Approval': 'Aprobación',
+    'Terror': 'Terror',
+    'Insecurity': 'Inseguridad',
+    'Anxiety': 'Ansiedad',
+    'Amazement': 'Asombro',
+    'Distraction': 'Distracción',
+    'Awe': 'Admiración',
+    'Melancholy': 'Melancolía',
+    'Grief': 'Pesar',
+    'Remorse': 'Remordimiento',
+    'Contempt': 'Desprecio',
+    'Revulsion': 'Repulsión',
+    'Rejection': 'Rechazo',
+    'Rage': 'Rabia',
+    'Annoyance': 'Molestia',
+    'Jealousy': 'Celos',
+    'Interest': 'Interés',
+    'Hope': 'Esperanza',
+    'Vigilance': 'Vigilancia',
   };
 
   Future<void> _save() async {
@@ -118,6 +154,10 @@ class _CheckInScreenState extends State<CheckInScreen> {
         _selectedColor = emotionColor;
       });
 
+      // Obtener traducciones para mostrar
+      final baseEmotionEs = _emotionTranslations[baseEmotion] ?? baseEmotion;
+      final subEmotionEs = _emotionTranslations[subEmotion] ?? subEmotion;
+
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Row(
@@ -133,7 +173,7 @@ class _CheckInScreenState extends State<CheckInScreen> {
               const SizedBox(width: 10),
               Expanded(
                 child: Text(
-                  'Seleccionaste: $baseEmotion - $subEmotion',
+                  'Seleccionaste: $baseEmotionEs - $subEmotionEs',
                   style: const TextStyle(color: Colors.white),
                 ),
               ),
@@ -151,21 +191,21 @@ class _CheckInScreenState extends State<CheckInScreen> {
 
   Color _getEmotionColor(String emotion) {
     switch (emotion) {
-      case 'Alegría':
+      case 'Joy':
         return const Color(0xFFFFD700);
-      case 'Confianza':
+      case 'Trust':
         return const Color(0xFF66BB6A);
-      case 'Miedo':
+      case 'Fear':
         return const Color(0xFF9C27B0);
-      case 'Sorpresa':
+      case 'Surprise':
         return const Color(0xFFFF9800);
-      case 'Tristeza':
+      case 'Sadness':
         return const Color(0xFF42A5F5);
-      case 'Aversión':
+      case 'Disgust':
         return const Color(0xFF8D6E63);
-      case 'Ira':
+      case 'Anger':
         return const Color(0xFFEF5350);
-      case 'Anticipación':
+      case 'Anticipation':
         return const Color(0xFFFFCA28);
       default:
         return const Color(0xFFB39DDB);
@@ -174,6 +214,14 @@ class _CheckInScreenState extends State<CheckInScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // Obtener traducciones para mostrar
+    final baseEmotionDisplay = _selectedBaseEmotion != null 
+        ? _emotionTranslations[_selectedBaseEmotion] ?? _selectedBaseEmotion 
+        : null;
+    final subEmotionDisplay = _selectedSubEmotion != null 
+        ? _emotionTranslations[_selectedSubEmotion] ?? _selectedSubEmotion 
+        : null;
+
     return Scaffold(
       backgroundColor: AppColors.surface,
       appBar: AppBar(
@@ -321,7 +369,7 @@ class _CheckInScreenState extends State<CheckInScreen> {
                               ),
                             ),
                             Text(
-                              '$_selectedBaseEmotion - $_selectedSubEmotion',
+                              '$baseEmotionDisplay - $subEmotionDisplay',
                               style: TextStyle(
                                 fontSize: 16,
                                 fontWeight: FontWeight.w600,
