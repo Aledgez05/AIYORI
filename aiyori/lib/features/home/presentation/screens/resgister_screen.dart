@@ -14,6 +14,7 @@ class RegisterScreen extends StatefulWidget {
 
 class _RegisterScreenState extends State<RegisterScreen> {
   String selectedRole = '';
+  String? professionalType; // 'psychologist' o 'psychiatrist'
 
   final nameController = TextEditingController();
   final emailController = TextEditingController();
@@ -21,7 +22,20 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final confirmPinController = TextEditingController();
   final passwordController = TextEditingController();
   final confirmPasswordController = TextEditingController();
+  final professionalLicenseController = TextEditingController();
   bool acceptedTerms = false;
+
+  @override
+  void dispose() {
+    nameController.dispose();
+    emailController.dispose();
+    pinController.dispose();
+    confirmPinController.dispose();
+    passwordController.dispose();
+    confirmPasswordController.dispose();
+    professionalLicenseController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -233,6 +247,125 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 ),
 
                 const SizedBox(height: 20),
+
+                // Campos profesionales (solo si es Healthcare Professional)
+                if (selectedRole == 'Healthcare Professional') ...[
+                  _buildSectionTitle('Professional Information'),
+                  const SizedBox(height: 16),
+
+                  // Selector de Profesional
+                  const Text(
+                    'Professional Type',
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
+                      color: Color(0xFF1C3D3A),
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: GestureDetector(
+                          onTap: () => setState(() => professionalType = 'psychologist'),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
+                            decoration: BoxDecoration(
+                              color: professionalType == 'psychologist'
+                                  ? const Color(0xFF6EC1C2).withOpacity(0.1)
+                                  : Colors.white.withOpacity(0.5),
+                              border: Border.all(
+                                color: professionalType == 'psychologist'
+                                    ? const Color(0xFF6EC1C2)
+                                    : Colors.grey.withOpacity(0.3),
+                                width: professionalType == 'psychologist' ? 2 : 1,
+                              ),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Radio<String>(
+                                  value: 'psychologist',
+                                  groupValue: professionalType,
+                                  onChanged: (value) =>
+                                      setState(() => professionalType = value),
+                                  activeColor: const Color(0xFF6EC1C2),
+                                ),
+                                const SizedBox(width: 8),
+                                const Expanded(
+                                  child: Text(
+                                    'Psicólogo',
+                                    style: TextStyle(
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w500,
+                                      color: Color(0xFF1C3D3A),
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: GestureDetector(
+                          onTap: () => setState(() => professionalType = 'psychiatrist'),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
+                            decoration: BoxDecoration(
+                              color: professionalType == 'psychiatrist'
+                                  ? const Color(0xFF6EC1C2).withOpacity(0.1)
+                                  : Colors.white.withOpacity(0.5),
+                              border: Border.all(
+                                color: professionalType == 'psychiatrist'
+                                    ? const Color(0xFF6EC1C2)
+                                    : Colors.grey.withOpacity(0.3),
+                                width: professionalType == 'psychiatrist' ? 2 : 1,
+                              ),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Radio<String>(
+                                  value: 'psychiatrist',
+                                  groupValue: professionalType,
+                                  onChanged: (value) =>
+                                      setState(() => professionalType = value),
+                                  activeColor: const Color(0xFF6EC1C2),
+                                ),
+                                const SizedBox(width: 8),
+                                const Expanded(
+                                  child: Text(
+                                    'Psiquiatra',
+                                    style: TextStyle(
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w500,
+                                      color: Color(0xFF1C3D3A),
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+
+                  const SizedBox(height: 16),
+
+                  // Campo de Cédula Profesional
+                  _buildTextField(
+                    controller: professionalLicenseController,
+                    hint: 'Cédula Profesional',
+                    icon: Icons.badge_outlined,
+                  ),
+
+                  const SizedBox(height: 20),
+                ],
 
                 // Términos y condiciones
                 Row(
@@ -600,6 +733,25 @@ class _RegisterScreenState extends State<RegisterScreen> {
       return;
     }
 
+    // Validar campos profesionales si es Healthcare Professional
+    if (selectedRole == 'Healthcare Professional') {
+      if (professionalType == null) {
+        _showErrorDialog('Please select your professional type (Psychologist or Psychiatrist)');
+        return;
+      }
+
+      final professionalLicense = professionalLicenseController.text.trim();
+      if (professionalLicense.isEmpty) {
+        _showErrorDialog('Professional license (Cédula Profesional) is required');
+        return;
+      }
+
+      if (professionalLicense.length < 5) {
+        _showErrorDialog('Professional license must be at least 5 characters');
+        return;
+      }
+    }
+
     // Create user in Firebase
     _createUserAndNavigate(
       email: email,
@@ -607,6 +759,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
       name: name,
       role: selectedRole,
       pin: pin,
+      professionalType: professionalType,
+      professionalLicense: professionalLicenseController.text.trim(),
     );
   }
 
@@ -616,6 +770,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
     required String name,
     required String role,
     required String pin,
+    String? professionalType,
+    String? professionalLicense,
   }) async {
     showDialog(
       context: context,
@@ -642,10 +798,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
       final userId = userCredential.user!.uid;
 
       // 2. Create user document in Firestore (storing PIN as well)
-      await FirebaseFirestore.instance
-          .collection('users')
-          .doc(userId)
-          .set({
+      final userData = {
         'uid': userId,
         'name': name,
         'email': email,
@@ -653,7 +806,20 @@ class _RegisterScreenState extends State<RegisterScreen> {
         'pin': pin,
         'createdAt': Timestamp.now(),
         'updatedAt': Timestamp.now(),
-      });
+      };
+
+      // Add professional fields if Healthcare Professional
+      if (role == 'Healthcare Professional') {
+        userData.addAll({
+          'professionalType': professionalType as String,
+          'professionalLicense': professionalLicense as String,
+        });
+      }
+
+      await FirebaseFirestore.instance
+          .collection('users')
+          .doc(userId)
+          .set(userData);
 
       if (!mounted) return;
       Navigator.pop(context); // Close loading dialog
