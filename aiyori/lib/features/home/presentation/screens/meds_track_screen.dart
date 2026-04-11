@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../../../../core/theme/app_colors.dart';
+import 'calendar_screen.dart';
 
 // Modelo simple — luego muévelo a data layer si crece el proyecto
 class _Med {
@@ -42,6 +43,7 @@ class _MedsTrackScreenState extends State<MedsTrackScreen> {
   bool _isLoading = true;
   bool _isSaving = false;
   bool _saved = false;
+  DateTime _selectedDate = DateTime.now();
 
   @override
   void initState() {
@@ -50,7 +52,7 @@ class _MedsTrackScreenState extends State<MedsTrackScreen> {
   }
 
   String get _todayDocId {
-    final d = DateTime.now();
+    final d = _selectedDate;
     return '${d.year}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
   }
 
@@ -87,9 +89,12 @@ class _MedsTrackScreenState extends State<MedsTrackScreen> {
   Future<void> _finalize() async {
     setState(() => _isSaving = true);
     try {
-      final today = DateTime.now();
+      final targetDate = _selectedDate;
+      // Create timestamp from selected date (midnight in local time)
+      final localMidnight = DateTime(targetDate.year, targetDate.month, targetDate.day);
+      
       await _recordsRef.doc(_todayDocId).set({
-        'date': Timestamp.fromDate(DateTime.utc(today.year, today.month, today.day)),
+        'date': Timestamp.fromDate(localMidnight),
         'meds': _meds.map((m) => m.toMap()).toList(),
       }, SetOptions(merge: true));
 
@@ -116,7 +121,7 @@ class _MedsTrackScreenState extends State<MedsTrackScreen> {
       backgroundColor: AppColors.surface,
       appBar: AppBar(
         backgroundColor: AppColors.primary,
-        title: const Text('Today\'s Medications',
+        title: const Text('Medicamentos',
             style: TextStyle(color: AppColors.textOnDark)),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: AppColors.textOnDark),
@@ -125,73 +130,175 @@ class _MedsTrackScreenState extends State<MedsTrackScreen> {
       ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
-          : Column(
-              children: [
-                // ── Progress card ──────────────────────────────────────────
-                _ProgressCard(taken: _takenCount, total: _meds.length, progress: _progress),
+          : SingleChildScrollView(
+              child: Column(
+                children: [
+                  // ── Progress card ──────────────────────────────────────────
+                  _ProgressCard(taken: _takenCount, total: _meds.length, progress: _progress),
 
-                // ── Meds list ──────────────────────────────────────────────
-                Expanded(
-                  child: _meds.isEmpty
-                      ? const Center(
-                          child: Text('No medications for today',
-                              style: TextStyle(color: AppColors.textSecondary)),
-                        )
-                      : ListView.separated(
-                          padding: const EdgeInsets.fromLTRB(16, 8, 16, 100),
-                          itemCount: _meds.length,
-                          separatorBuilder: (_, _) => const SizedBox(height: 8),
-                          itemBuilder: (_, i) => _MedTile(
-                            med: _meds[i],
-                            onChanged: (val) => setState(() {
-                              _meds[i].isTaken = val ?? false;
-                              _saved = false;
-                            }),
+                  // ── Selector de fecha ────────────────────────────────────
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'Registrar para qué día',
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                            color: AppColors.textPrimary,
                           ),
                         ),
-                ),
-              ],
+                        const SizedBox(height: 10),
+                        SingleChildScrollView(
+                          scrollDirection: Axis.horizontal,
+                          child: Row(
+                            children: [
+                              for (int i = 0; i <= 2; i++)
+                                Padding(
+                                  padding: const EdgeInsets.only(right: 8),
+                                  child: FilterChip(
+                                    selected: _selectedDate.difference(DateTime.now()).inDays == -i,
+                                    onSelected: (_) {
+                                      setState(() {
+                                        _selectedDate = DateTime.now().subtract(Duration(days: i));
+                                        _saved = false;
+                                      });
+                                      _loadTodayMeds();
+                                    },
+                                    label: Text(_getDateLabel(i)),
+                                    backgroundColor: Colors.white,
+                                    selectedColor: AppColors.primary.withOpacity(0.2),
+                                    side: BorderSide(
+                                      color: _selectedDate.difference(DateTime.now()).inDays == -i
+                                          ? AppColors.primary
+                                          : AppColors.divider,
+                                      width: _selectedDate.difference(DateTime.now()).inDays == -i ? 2 : 1,
+                                    ),
+                                  ),
+                                ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  // ── Meds list ──────────────────────────────────────────────
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 8, 16, 120),
+                    child: _meds.isEmpty
+                        ? const Center(
+                            child: Text('No medications for this day',
+                                style: TextStyle(color: AppColors.textSecondary)),
+                          )
+                        : ListView.separated(
+                            shrinkWrap: true,
+                            physics: const NeverScrollableScrollPhysics(),
+                            itemCount: _meds.length,
+                            separatorBuilder: (_, _) => const SizedBox(height: 8),
+                            itemBuilder: (_, i) => _MedTile(
+                              med: _meds[i],
+                              onChanged: (val) => setState(() {
+                                _meds[i].isTaken = val ?? false;
+                                _saved = false;
+                              }),
+                            ),
+                          ),
+                  ),
+                ],
+              ),
             ),
 
-      // ── Botón finalizar ──────────────────────────────────────────────────
+      // ── Botones guardar y calendario ─────────────────────────────────────
       bottomNavigationBar: Container(
         padding: EdgeInsets.fromLTRB(
-            20, 12, 20, MediaQuery.of(context).padding.bottom + 12),
+            16, 12, 16, MediaQuery.of(context).padding.bottom + 12),
         decoration: const BoxDecoration(
           color: Colors.white,
           border: Border(top: BorderSide(color: AppColors.divider)),
         ),
-        child: SizedBox(
-          height: 52,
-          child: ElevatedButton(
-            onPressed: _isSaving ? null : _finalize,
-            style: ElevatedButton.styleFrom(
-              backgroundColor: _saved ? AppColors.accentSoft : AppColors.primary,
-              foregroundColor: AppColors.textOnDark,
-              disabledBackgroundColor: AppColors.divider,
-              shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(14)),
+        child: Row(
+          children: [
+            Expanded(
+              child: SizedBox(
+                height: 48,
+                child: ElevatedButton(
+                  onPressed: _isSaving ? null : _finalize,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: _saved ? AppColors.accentSoft : AppColors.primary,
+                    foregroundColor: AppColors.textOnDark,
+                    disabledBackgroundColor: AppColors.divider,
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12)),
+                  ),
+                  child: _isSaving
+                      ? const SizedBox(
+                          width: 20, height: 20,
+                          child: CircularProgressIndicator(
+                              strokeWidth: 2, color: Colors.white))
+                      : Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(_saved ? Icons.check_circle : Icons.save_outlined,
+                                size: 18),
+                            const SizedBox(width: 8),
+                            Text(_saved ? 'Guardado' : 'Guardar',
+                                style: const TextStyle(
+                                    fontSize: 14, fontWeight: FontWeight.w600)),
+                          ],
+                        ),
+                ),
+              ),
             ),
-            child: _isSaving
-                ? const SizedBox(
-                    width: 22, height: 22,
-                    child: CircularProgressIndicator(
-                        strokeWidth: 2.5, color: Colors.white))
-                : Row(
+            const SizedBox(width: 12),
+            Expanded(
+              child: SizedBox(
+                height: 48,
+                child: OutlinedButton(
+                  onPressed: () {
+                    Navigator.pushReplacement(
+                      context,
+                      MaterialPageRoute(builder: (_) => const CalendarScreen()),
+                    );
+                  },
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: AppColors.primary,
+                    side: const BorderSide(color: AppColors.primary, width: 2),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12)),
+                  ),
+                  child: const Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Icon(_saved ? Icons.check_circle : Icons.save_outlined,
-                          size: 20),
-                      const SizedBox(width: 8),
-                      Text(_saved ? 'Guardado' : 'Finalizar y guardar',
-                          style: const TextStyle(
-                              fontSize: 15, fontWeight: FontWeight.w600)),
+                      Icon(Icons.calendar_today_outlined, size: 18),
+                      SizedBox(width: 8),
+                      Text('Calendario',
+                          style: TextStyle(
+                              fontSize: 14, fontWeight: FontWeight.w600)),
                     ],
                   ),
-          ),
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     );
+  }
+
+  String _getDateLabel(int daysBack) {
+    switch (daysBack) {
+      case 0:
+        return 'Hoy';
+      case 1:
+        return 'Ayer';
+      case 2:
+        return 'Hace 2 días';
+      default:
+        return 'Hace $daysBack días';
+    }
   }
 }
 

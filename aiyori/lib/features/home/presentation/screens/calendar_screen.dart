@@ -16,16 +16,16 @@ class _CalendarScreenState extends State<CalendarScreen> {
   final FirebaseService _firebaseService = FirebaseService();
   
   DateTime _focusedDay = DateTime.now();
-  DateTime _selectedDay = DateTime.utc(
+  DateTime _selectedDay = DateTime(
     DateTime.now().year,
     DateTime.now().month,
     DateTime.now().day,
   );
 
-  // Caché local indexada por fecha UTC normalizada
+  // Caché local indexada por fecha normalizada (local time)
   final Map<DateTime, Map<String, dynamic>> _cache = {};
 
-  DateTime _toUtc(DateTime d) => DateTime.utc(d.year, d.month, d.day);
+  DateTime _toLocalMidnight(DateTime d) => DateTime(d.year, d.month, d.day);
 
   // Stream del rango visible (mes actual ± 2 meses)
   Stream<QuerySnapshot<Map<String, dynamic>>> _buildStream() {
@@ -43,14 +43,15 @@ class _CalendarScreenState extends State<CalendarScreen> {
       final raw = data['date'];
       if (raw is Timestamp) {
         final dt = raw.toDate();
-        _cache[DateTime.utc(dt.year, dt.month, dt.day)] = data;
+        // Convert timestamp to local midnight for cache key
+        _cache[DateTime(dt.year, dt.month, dt.day)] = data;
       }
     }
   }
 
   // EventLoader para TableCalendar — retorna lista no vacía si hay datos
   List<Object> _eventLoader(DateTime day) {
-    final key = _toUtc(day);
+    final key = _toLocalMidnight(day);
     final record = _cache[key];
     if (record == null) return [];
     final hasMood = record['moodIndex'] != null;
@@ -100,14 +101,14 @@ class _CalendarScreenState extends State<CalendarScreen> {
                   border: Border.all(color: AppColors.divider),
                 ),
                 child: TableCalendar(
-                  firstDay: DateTime.utc(2020, 1, 1),
-                  lastDay: DateTime.utc(2030, 12, 31),
+                  firstDay: DateTime(2020, 1, 1),
+                  lastDay: DateTime(2030, 12, 31),
                   focusedDay: _focusedDay,
                   locale: 'es_ES',
-                  selectedDayPredicate: (d) => isSameDay(_toUtc(d), _selectedDay),
+                  selectedDayPredicate: (d) => isSameDay(_toLocalMidnight(d), _selectedDay),
                   eventLoader: _eventLoader,
                   onDaySelected: (selected, focused) => setState(() {
-                    _selectedDay = _toUtc(selected);
+                    _selectedDay = _toLocalMidnight(selected);
                     _focusedDay = focused;
                   }),
                   onPageChanged: (focused) =>

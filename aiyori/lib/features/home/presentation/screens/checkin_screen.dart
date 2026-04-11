@@ -18,6 +18,7 @@ class _CheckInScreenState extends State<CheckInScreen> {
   bool _isSaving = false;
   String? _selectedBaseEmotion;
   String? _selectedSubEmotion;
+  DateTime _selectedDate = DateTime.now();
 
   // Colores del picker ordenados por emoción (cálidos→fríos)
   static const List<Color> _colorOptions = [
@@ -61,17 +62,41 @@ class _CheckInScreenState extends State<CheckInScreen> {
       final uid = FirebaseAuth.instance.currentUser?.uid;
       if (uid == null) throw Exception('User not authenticated');
 
-      final today = DateTime.now();
+      final targetDate = _selectedDate;
       final docId =
-          '${today.year}-${today.month.toString().padLeft(2, '0')}-${today.day.toString().padLeft(2, '0')}';
+          '${targetDate.year}-${targetDate.month.toString().padLeft(2, '0')}-${targetDate.day.toString().padLeft(2, '0')}';
 
+      // Check if a check-in already exists for the selected date
+      final existingRecord = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(uid)
+          .collection('daily_records')
+          .doc(docId)
+          .get();
+
+      if (existingRecord.exists && existingRecord.data()?['moodIndex'] != null) {
+        if (!mounted) return;
+        setState(() => _isSaving = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text('Ya hay un check-in emocional para este día'),
+            backgroundColor: AppColors.error,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+        return;
+      }
+
+      // Create timestamp from selected date (midnight in local time)
+      final localMidnight = DateTime(targetDate.year, targetDate.month, targetDate.day);
+      
       await FirebaseFirestore.instance
           .collection('users')
           .doc(uid)
           .collection('daily_records')
           .doc(docId)
           .set({
-        'date': Timestamp.fromDate(DateTime.utc(today.year, today.month, today.day)),
+        'date': Timestamp.fromDate(localMidnight),
         'moodIndex': _selectedMood,
         'moodLabel': _moods[_selectedMood!]['label'],
         'moodColor': _selectedColor.value,
@@ -80,10 +105,13 @@ class _CheckInScreenState extends State<CheckInScreen> {
       }, SetOptions(merge: true));
 
       if (!mounted) return;
-
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (_) => const CalendarScreen()),
+      
+      setState(() => _isSaving = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Check-in guardado exitosamente ✓'),
+          backgroundColor: AppColors.accentSoft,
+        ),
       );
     } catch (e) {
       if (!mounted) return;
@@ -419,43 +447,169 @@ class _CheckInScreenState extends State<CheckInScreen> {
 
               const SizedBox(height: 36),
 
-              // ── Botón guardar ────────────────────────────────────────────
-              SizedBox(
-                width: double.infinity,
-                height: 52,
-                child: ElevatedButton(
-                  onPressed: (_selectedMood == null || _isSaving) ? null : _save,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primary,
-                    foregroundColor: AppColors.textOnDark,
-                    disabledBackgroundColor: AppColors.divider,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(14),
-                    ),
-                    elevation: _selectedMood != null ? 2 : 0,
-                  ),
-                  child: _isSaving
-                      ? const SizedBox(
-                          width: 22,
-                          height: 22,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2.5,
-                            color: Colors.white,
+              // ── Selector de fecha ────────────────────────────────────────
+              const Text(
+                'Registrar para qué día',
+                style: TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.textPrimary,
+                ),
+              ),
+              const SizedBox(height: 12),
+              SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: Row(
+                  children: [
+                    for (int i = 0; i <= 2; i++)
+                      _DateButton(
+                        daysBack: i,
+                        isSelected: _selectedDate.difference(DateTime.now()).inDays == -i,
+                        onTap: () {
+                          setState(() {
+                            _selectedDate = DateTime.now().subtract(Duration(days: i));
+                          });
+                        },
+                      ),
+                  ],
+                ),
+              ),
+
+              const SizedBox(height: 24),
+
+              // ── Botones guardar y calendario ─────────────────────────────
+              Row(
+                children: [
+                  Expanded(
+                    child: SizedBox(
+                      height: 52,
+                      child: ElevatedButton(
+                        onPressed: (_selectedMood == null || _isSaving) ? null : _save,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.primary,
+                          foregroundColor: AppColors.textOnDark,
+                          disabledBackgroundColor: AppColors.divider,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(14),
                           ),
-                        )
-                      : const Text(
-                          'Guardar y ver calendario',
-                          style: TextStyle(
-                            fontSize: 15,
-                            fontWeight: FontWeight.w600,
+                          elevation: _selectedMood != null ? 2 : 0,
+                        ),
+                        child: _isSaving
+                            ? const SizedBox(
+                                width: 22,
+                                height: 22,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2.5,
+                                  color: Colors.white,
+                                ),
+                              )
+                            : const Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Icon(Icons.save_outlined, size: 18),
+                                  SizedBox(width: 8),
+                                  Text(
+                                    'Guardar',
+                                    style: TextStyle(
+                                      fontSize: 15,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: SizedBox(
+                      height: 52,
+                      child: OutlinedButton(
+                        onPressed: () {
+                          Navigator.pushReplacement(
+                            context,
+                            MaterialPageRoute(builder: (_) => const CalendarScreen()),
+                          );
+                        },
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: AppColors.primary,
+                          side: const BorderSide(color: AppColors.primary, width: 2),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(14),
                           ),
                         ),
-                ),
+                        child: const Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(Icons.calendar_today_outlined, size: 18),
+                            SizedBox(width: 8),
+                            Text(
+                              'Calendario',
+                              style: TextStyle(
+                                fontSize: 15,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
               ),
 
               const SizedBox(height: 16),
             ],
           ),
+        ),
+      ),
+    );
+  }
+}
+
+// ─── Selector de fecha ────────────────────────────────────────────────────────
+
+class _DateButton extends StatelessWidget {
+  final int daysBack;
+  final bool isSelected;
+  final VoidCallback onTap;
+
+  const _DateButton({
+    required this.daysBack,
+    required this.isSelected,
+    required this.onTap,
+  });
+
+  String get _label {
+    switch (daysBack) {
+      case 0:
+        return 'Hoy';
+      case 1:
+        return 'Ayer';
+      case 2:
+        return 'Hace 2 días';
+      default:
+        return 'Hace $daysBack días';
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(right: 8),
+      child: FilterChip(
+        selected: isSelected,
+        onSelected: (_) => onTap(),
+        label: Text(_label),
+        backgroundColor: Colors.white,
+        selectedColor: AppColors.primary.withOpacity(0.2),
+        side: BorderSide(
+          color: isSelected ? AppColors.primary : AppColors.divider,
+          width: isSelected ? 2 : 1,
+        ),
+        labelStyle: TextStyle(
+          color: isSelected ? AppColors.primary : AppColors.textPrimary,
+          fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
         ),
       ),
     );

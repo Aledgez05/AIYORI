@@ -99,15 +99,15 @@ class FirebaseService {
     return '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
   }
 
-  /// Obtiene hoy como timestamp UTC
+  /// Obtiene hoy como DateTime normalizada (local time, midnight)
   DateTime getTodayUtc() {
     final now = DateTime.now();
-    return DateTime.utc(now.year, now.month, now.day);
+    return DateTime(now.year, now.month, now.day);
   }
 
-  /// Convierte una DateTime a UTC normalizada
+  /// Convierte una DateTime a local midnight normalizada
   DateTime toUtc(DateTime dateTime) {
-    return DateTime.utc(dateTime.year, dateTime.month, dateTime.day);
+    return DateTime(dateTime.year, dateTime.month, dateTime.day);
   }
 
   /// Sincroniza offline con Firebase cuando hay conexión
