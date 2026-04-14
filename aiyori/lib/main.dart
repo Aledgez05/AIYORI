@@ -9,6 +9,7 @@ import 'package:firebase_analytics/firebase_analytics.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'features/home/presentation/screens/auth_screen.dart';
 import 'features/home/presentation/screens/home_screen.dart';
+import 'features/home/presentation/screens/home_professional_screen.dart';
 
 const bool _useEmulator = false; // Use cloud Firebase
 void main() async {
@@ -68,9 +69,36 @@ class MyApp extends StatelessWidget {
             );
           }
 
-          // Si hay usuario autenticado, ir a HomeScreen
+          // Si hay usuario autenticado, decidir la pantalla según el rol en Firestore
           if (snapshot.hasData && snapshot.data != null) {
-            return const HomeScreen();
+            final uid = snapshot.data!.uid;
+            return FutureBuilder<
+                DocumentSnapshot<Map<String, dynamic>>>(
+              future: FirebaseFirestore.instance
+                  .collection('users')
+                  .doc(uid)
+                  .get(),
+              builder: (context, userSnap) {
+                if (userSnap.connectionState == ConnectionState.waiting) {
+                  return const Scaffold(
+                    body: Center(child: CircularProgressIndicator()),
+                  );
+                }
+                
+                //NEEDS FIX CAUSE SOMETIMES IT OPENSS THE DEFAUL );<<
+
+                if (userSnap.hasData && userSnap.data != null && userSnap.data!.exists) {
+                  final data = userSnap.data!.data();
+                  final role = (data?['role'] as String?) ?? '';
+                  if (role == 'Healthcare Professional') {
+                    return const HomeProfessionalScreen();
+                  }
+                }
+
+                // Por defecto, vista de paciente
+                return const HomeScreen();
+              },
+            );
           }
 
           // Si no hay usuario, mostrar AuthScreen

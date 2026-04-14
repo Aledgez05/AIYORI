@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
-import '../../../../../core/theme/app_colors.dart';
 import 'patients_screen.dart';
 import 'appointments_screen.dart';
 import 'statistics_screen.dart';
 import 'patient_detail_screen.dart';
 import 'new_patient_screen.dart';
+import 'checkin_screen.dart';
 
 class HomeProfessionalScreen extends StatefulWidget {
   const HomeProfessionalScreen({super.key});
@@ -314,6 +314,17 @@ class _HomeProfessionalScreenState extends State<HomeProfessionalScreen> {
 
  Widget _buildQuickActions() {
   final actions = [
+    {
+      'icon': Icons.local_florist_rounded,
+      'label': 'Check-in\nemocional',
+      'color': const Color(0xFF6EC1C2),
+      'onTap': () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => const CheckInScreen(todayOnly: true)),
+        );
+      },
+    },
     {
       'icon': Icons.person_add_rounded,
       'label': 'Nuevo\npaciente',

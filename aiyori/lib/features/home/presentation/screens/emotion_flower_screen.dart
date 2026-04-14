@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
 import 'dart:math' as math;
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/services/firebase_service.dart';
+import 'calendar_screen.dart';
 
 class EmotionFlowerScreen extends StatefulWidget {
   const EmotionFlowerScreen({super.key});
@@ -18,10 +22,23 @@ class _EmotionFlowerScreenState extends State<EmotionFlowerScreen>
   String? _selectedBaseEmotion;
   String? _selectedSubEmotion;
   List<String> _currentSubEmotions = [];
-  
   bool _isExpanded = false;
+  bool _isSaving = false;
+  String? _moodStatus; // Mood status based on base emotion
+  
+  // Mapping from base emotion to detected mood label and level
+  static const Map<String, Map<String, dynamic>> _emotionToMood = {
+    'Joy': {'status': 'Very Good', 'level': 4},
+    'Trust': {'status': 'Good', 'level': 3},
+    'Anticipation': {'status': 'Neutral', 'level': 2},
+    'Surprise': {'status': 'Neutral', 'level': 2},
+    'Fear': {'status': 'Bad', 'level': 1},
+    'Sadness': {'status': 'Very Bad', 'level': 0},
+    'Disgust': {'status': 'Very Bad', 'level': 0},
+    'Anger': {'status': 'Bad', 'level': 1},
+  };
 
-  // 8 emociones base - EN INGLÉS
+  // 8 base emotions
   static const List<Map<String, dynamic>> _baseEmotions = [
     {'name': 'Joy', 'color': Color(0xFFFFD700), 'angle': 0.0},
     {'name': 'Trust', 'color': Color(0xFF66BB6A), 'angle': 45.0},
@@ -33,7 +50,7 @@ class _EmotionFlowerScreenState extends State<EmotionFlowerScreen>
     {'name': 'Anticipation', 'color': Color(0xFFFFCA28), 'angle': 315.0},
   ];
 
-  // Sub-emociones - EN INGLÉS
+  // Sub-emotions
   static const Map<String, List<Map<String, dynamic>>> _subEmotions = {
     'Joy': [
       {'name': 'Optimism', 'color': Color(0xFFFFE082)},
@@ -119,17 +136,176 @@ class _EmotionFlowerScreenState extends State<EmotionFlowerScreen>
     
     setState(() {
       _selectedSubEmotion = subEmotion;
-    });
-    
-    // Pequeño delay para asegurar que el estado se actualice
-    Future.delayed(const Duration(milliseconds: 100), () {
-      if (mounted) {
-        Navigator.pop(context, {
-          'baseEmotion': _selectedBaseEmotion,
-          'subEmotion': subEmotion,
-        });
+      // Update mood status based on base emotion
+      if (_selectedBaseEmotion != null) {
+        final moodData = _emotionToMood[_selectedBaseEmotion!];
+        if (moodData != null) {
+          _moodStatus = moodData['status'] as String?;
+        }
       }
     });
+  }
+
+  Future<bool> _checkDuplicateEntry() async {
+    try {
+      final uid = FirebaseAuth.instance.currentUser?.uid;
+      if (uid == null) throw Exception('User not authenticated');
+
+      final now = DateTime.now();
+      final startOfDay = DateTime(now.year, now.month, now.day);
+      final endOfDay = startOfDay.add(const Duration(days: 1));
+
+      final snapshot = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(uid)
+          .collection('emotions')
+          .where('timestamp', isGreaterThanOrEqualTo: Timestamp.fromDate(startOfDay))
+          .where('timestamp', isLessThan: Timestamp.fromDate(endOfDay))
+          .limit(1)
+          .get();
+
+      return snapshot.docs.isEmpty; // True if no duplicate, False if exists
+    } on FirebaseException catch (e) {
+      print('Firebase error checking duplicate: $e');
+      rethrow;
+    } catch (e) {
+      print('Error checking duplicate: $e');
+      rethrow;
+    }
+  }
+
+  Future<void> _saveEmotion() async {
+    if (_selectedBaseEmotion == null || _selectedSubEmotion == null) {
+      _showErrorDialog('Please select an emotion first');
+      return;
+    }
+
+    setState(() => _isSaving = true);
+
+    try {
+      // Ensure the user is authenticated before attempting reads/writes.
+      final uid = FirebaseAuth.instance.currentUser?.uid;
+      if (uid == null) {
+        if (mounted) _showErrorDialog('Please sign in to save your emotions.');
+        setState(() => _isSaving = false);
+        return;
+      }
+
+      final isDuplicate = await _checkDuplicateEntry();
+      if (!isDuplicate) {
+        if (mounted) {
+          _showErrorDialog(
+            'You have already recorded an emotion today. Please come back tomorrow.',
+            isError: true,
+          );
+        }
+        setState(() => _isSaving = false);
+        return;
+      }
+
+      final moodLevel = _emotionToMood[_selectedBaseEmotion!]?['level'] ?? 2;
+      final detectedMoodLabel = _emotionToMood[_selectedBaseEmotion!]?['status'] as String? ?? 'Neutral';
+      final detectedMoodLevel = moodLevel;
+
+      await FirebaseFirestore.instance
+          .collection('users')
+          .doc(uid)
+          .collection('emotions')
+          .add({
+            'baseEmotion': _selectedBaseEmotion,
+            'subEmotion': _selectedSubEmotion,
+            'detectedMoodLabel': detectedMoodLabel,
+            'detectedMoodLevel': detectedMoodLevel,
+            'moodLevel': moodLevel,
+            'timestamp': Timestamp.fromDate(DateTime.now()),
+        });
+
+      // Also upsert a `daily_records` document so the calendar shows today's check-in
+      try {
+        final now = DateTime.now();
+        final localMidnight = DateTime(now.year, now.month, now.day);
+        final docId = FirebaseService().getDocIdForDate(localMidnight);
+
+        final moodLabel = _selectedSubEmotion ?? _selectedBaseEmotion;
+        Color? baseColor;
+        try {
+          baseColor = _baseEmotions
+              .firstWhere((e) => e['name'] == _selectedBaseEmotion)['color']
+              as Color?;
+        } catch (_) {
+          baseColor = null;
+        }
+        final moodColorVal =
+            (baseColor != null) ? baseColor.value : AppColors.primary.value;
+
+        await FirebaseService().saveDailyRecord(docId, {
+          'date': Timestamp.fromDate(localMidnight),
+          'moodIndex': moodLevel,
+          'moodLabel': moodLabel,
+          'moodColor': moodColorVal,
+          'baseEmotion': _selectedBaseEmotion,
+          'subEmotion': _selectedSubEmotion,
+          'detectedMoodLabel': detectedMoodLabel,
+          'detectedMoodLevel': detectedMoodLevel,
+        });
+      } catch (e) {
+        print('Error upserting daily record: $e');
+      }
+
+      if (mounted) {
+        _showErrorDialog(
+          'Emotion saved successfully!',
+          isError: false,
+        );
+        Future.delayed(const Duration(seconds: 1), () {
+          if (mounted) Navigator.pop(context);
+        });
+      }
+    } on FirebaseException catch (e) {
+      final msg = (e.code == 'permission-denied' || (e.message != null && e.message!.toLowerCase().contains('permission')))
+          ? 'You do not have permission to save. Check your connection or talk to the admin.'
+          : 'Error saving: ${e.message ?? e}';
+      if (mounted) _showErrorDialog(msg);
+    } catch (e) {
+      if (mounted) {
+        _showErrorDialog('Error saving: $e');
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isSaving = false);
+      }
+    }
+  }
+
+  void _showErrorDialog(String message, {bool isError = true}) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Row(
+          children: [
+            Icon(
+              isError ? Icons.error_outline : Icons.check_circle_outline,
+              color: isError ? AppColors.error : AppColors.primary,
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                  isError ? 'Error' : 'Success',
+                  style: const TextStyle(fontWeight: FontWeight.w600),
+                ),
+            ),
+          ],
+        ),
+        content: Text(message),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('OK'),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
@@ -148,6 +324,17 @@ class _EmotionFlowerScreenState extends State<EmotionFlowerScreen>
           icon: const Icon(Icons.close, color: Color(0xFF4A4A4A)),
           onPressed: () => Navigator.pop(context),
         ),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.calendar_today_outlined, color: Color(0xFF4A4A4A)),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const CalendarScreen()),
+              );
+            },
+          ),
+        ],
       ),
       body: SafeArea(
         child: Column(
@@ -204,42 +391,128 @@ class _EmotionFlowerScreenState extends State<EmotionFlowerScreen>
             ),
             
             if (_selectedSubEmotion != null)
-              Container(
-                margin: const EdgeInsets.all(24),
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(30),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.05),
-                      blurRadius: 20,
-                      offset: const Offset(0, 5),
-                    ),
-                  ],
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 24),
+                child: Column(
                   children: [
-                    const Icon(
-                      Icons.check_circle,
-                      color: Color(0xFF6EC1C2),
-                      size: 24,
-                    ),
-                    const SizedBox(width: 12),
-                    Text(
-                      'Selected: $_selectedSubEmotion',
-                      style: const TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.w400,
-                        color: Color(0xFF4A4A4A),
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(16),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.05),
+                            blurRadius: 10,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
                       ),
+                      child: Column(
+                        children: [
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              const Icon(
+                                Icons.check_circle,
+                                color: Color(0xFF6EC1C2),
+                                size: 24,
+                              ),
+                              const SizedBox(width: 12),
+                              Text(
+                                _selectedSubEmotion!,
+                                style: const TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.w600,
+                                  color: Color(0xFF4A4A4A),
+                                ),
+                              ),
+                            ],
+                          ),
+                          if (_moodStatus != null) ...[
+                            const SizedBox(height: 12),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFF6EC1C2).withOpacity(0.1),
+                                borderRadius: BorderRadius.circular(20),
+                              ),
+                              child: Text(
+                                _moodStatus!,
+                                style: const TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w500,
+                                  color: Color(0xFF6EC1C2),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: ElevatedButton.icon(
+                            onPressed: _isSaving ? null : _saveEmotion,
+                            icon: _isSaving
+                                ? SizedBox(
+                                    width: 20,
+                                    height: 20,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                      valueColor: AlwaysStoppedAnimation<Color>(
+                                        Colors.white.withOpacity(0.8),
+                                      ),
+                                    ),
+                                  )
+                                : const Icon(Icons.save_rounded),
+                              label: Text(_isSaving ? 'Saving...' : 'Save'),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: AppColors.primary,
+                              foregroundColor: Colors.white,
+                              padding: const EdgeInsets.symmetric(vertical: 14),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        ElevatedButton.icon(
+                          onPressed: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(builder: (_) => const CalendarScreen()),
+                            );
+                          },
+                          icon: const Icon(Icons.calendar_month_rounded),
+                          label: const Text('Calendar'),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.white,
+                            foregroundColor: AppColors.primary,
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 16,
+                              vertical: 14,
+                            ),
+                            side: const BorderSide(
+                              color: AppColors.primary,
+                              width: 1.5,
+                            ),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                   ],
                 ),
               ),
             
-            const SizedBox(height: 8),
+            const SizedBox(height: 24),
           ],
         ),
       ),
@@ -310,8 +583,12 @@ class _EmotionFlowerScreenState extends State<EmotionFlowerScreen>
     double relativeAngle = angle - baseAngle;
     
     // Normalizar al rango [-180, 180]
-    while (relativeAngle > 180) relativeAngle -= 360;
-    while (relativeAngle < -180) relativeAngle += 360;
+    while (relativeAngle > 180) {
+      relativeAngle -= 360;
+    }
+    while (relativeAngle < -180) {
+      relativeAngle += 360;
+    }
     
     print('Base angle: $baseAngle');
     print('Relative angle: $relativeAngle');

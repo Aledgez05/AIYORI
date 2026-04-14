@@ -1,3 +1,4 @@
+import 'package:aiyori/features/home/presentation/screens/emotion_flower_screen.dart';
 import 'package:aiyori/features/home/presentation/screens/meds_track_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -359,12 +360,12 @@ class _HomeScreenState extends State<HomeScreen> {
               children: [
                 _featureCard(
                   icon: Icons.favorite_rounded,
-                  label: 'Emotional Check-in',
+                  label: 'Today\'s Emotional Check-in',
                   onTap: () {
                     Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder: (_) => const CheckInScreen(),
+                        builder: (_) => const EmotionFlowerScreen(),
                       ),
                     );
                   },

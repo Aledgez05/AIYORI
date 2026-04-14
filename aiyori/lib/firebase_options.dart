@@ -41,38 +41,38 @@ class DefaultFirebaseOptions {
   }
 
   static const FirebaseOptions web = FirebaseOptions(
-    apiKey: 'AIzaSyBhrRfRiL-k3NNg2UdB1ad6e5_nPRPNtcI',
-    appId: '1:983419112932:web:313a2a876a51c87f40cbf1',
-    messagingSenderId: '983419112932',
-    projectId: 'mind-aiyori',
-    authDomain: 'mind-aiyori.firebaseapp.com',
-    storageBucket: 'mind-aiyori.firebasestorage.app',
-    measurementId: 'G-NL5SGPEFPZ',
+    apiKey: 'AIzaSyAGdG8OqjPDMLHuUrzBEb-uSD6r3Op51Us',
+    appId: '1:96272943359:web:3b44bd1366d584b52424ca',
+    messagingSenderId: '96272943359',
+    projectId: 'aiyori-aa',
+    authDomain: 'aiyori-aa.firebaseapp.com',
+    storageBucket: 'aiyori-aa.firebasestorage.app',
+    measurementId: 'G-H1B5HKLNR1',
   );
 
   static const FirebaseOptions android = FirebaseOptions(
-    apiKey: 'AIzaSyBltqYUGX4xB_5Jeny7SKEvn85d4uBQKiY',
-    appId: '1:983419112932:android:d4f30bbe3a54a56040cbf1',
-    messagingSenderId: '983419112932',
-    projectId: 'mind-aiyori',
-    storageBucket: 'mind-aiyori.firebasestorage.app',
+    apiKey: 'AIzaSyDZKK8mLDrCoyN-gYbWkUhLeT83UWurHTA',
+    appId: '1:96272943359:android:bbad0477679df4ed2424ca',
+    messagingSenderId: '96272943359',
+    projectId: 'aiyori-aa',
+    storageBucket: 'aiyori-aa.firebasestorage.app',
   );
 
   static const FirebaseOptions ios = FirebaseOptions(
-    apiKey: 'AIzaSyBHS0aJz16RDgamg-3M5-W4iAHRL6uJZds',
-    appId: '1:983419112932:ios:fadc93a8eb69ee8640cbf1',
-    messagingSenderId: '983419112932',
-    projectId: 'mind-aiyori',
-    storageBucket: 'mind-aiyori.firebasestorage.app',
+    apiKey: 'AIzaSyAHG9huDRD3fanoGdZ1FMNLou20PFTmN6w',
+    appId: '1:96272943359:ios:e942f9634bf32d412424ca',
+    messagingSenderId: '96272943359',
+    projectId: 'aiyori-aa',
+    storageBucket: 'aiyori-aa.firebasestorage.app',
     iosBundleId: 'com.example.aiyori',
   );
 
   static const FirebaseOptions macos = FirebaseOptions(
-    apiKey: 'AIzaSyBHS0aJz16RDgamg-3M5-W4iAHRL6uJZds',
-    appId: '1:983419112932:ios:fadc93a8eb69ee8640cbf1',
-    messagingSenderId: '983419112932',
-    projectId: 'mind-aiyori',
-    storageBucket: 'mind-aiyori.firebasestorage.app',
+    apiKey: 'AIzaSyAHG9huDRD3fanoGdZ1FMNLou20PFTmN6w',
+    appId: '1:96272943359:ios:e942f9634bf32d412424ca',
+    messagingSenderId: '96272943359',
+    projectId: 'aiyori-aa',
+    storageBucket: 'aiyori-aa.firebasestorage.app',
     iosBundleId: 'com.example.aiyori',
   );
 
