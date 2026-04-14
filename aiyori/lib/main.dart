@@ -84,6 +84,8 @@ class MyApp extends StatelessWidget {
                     body: Center(child: CircularProgressIndicator()),
                   );
                 }
+                
+                //NEEDS FIX CAUSE SOMETIMES IT OPENSS THE DEFAUL );<<
 
                 if (userSnap.hasData && userSnap.data != null && userSnap.data!.exists) {
                   final data = userSnap.data!.data();
