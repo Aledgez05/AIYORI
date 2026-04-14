@@ -38,7 +38,7 @@ class FirebaseService {
             data,
             SetOptions(merge: true),
           );
-    } on FirebaseException catch (e) {
+    } on FirebaseException {
       // Re-throw the original FirebaseException so callers can inspect
       // the error code (e.g. permission-denied) and show a helpful message.
       rethrow;
