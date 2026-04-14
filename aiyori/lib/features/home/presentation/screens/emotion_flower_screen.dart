@@ -24,9 +24,8 @@ class _EmotionFlowerScreenState extends State<EmotionFlowerScreen>
   List<String> _currentSubEmotions = [];
   bool _isExpanded = false;
   bool _isSaving = false;
-  String? _moodStatus; // Mood status based on base emotion
+  String? _moodStatus;
   
-  // Mapping from base emotion to detected mood label and level
   static const Map<String, Map<String, dynamic>> _emotionToMood = {
     'Joy': {'status': 'Very Good', 'level': 4},
     'Trust': {'status': 'Good', 'level': 3},
@@ -38,7 +37,6 @@ class _EmotionFlowerScreenState extends State<EmotionFlowerScreen>
     'Anger': {'status': 'Bad', 'level': 1},
   };
 
-  // 8 base emotions
   static const List<Map<String, dynamic>> _baseEmotions = [
     {'name': 'Joy', 'color': Color(0xFFFFD700), 'angle': 0.0},
     {'name': 'Trust', 'color': Color(0xFF66BB6A), 'angle': 45.0},
@@ -50,7 +48,6 @@ class _EmotionFlowerScreenState extends State<EmotionFlowerScreen>
     {'name': 'Anticipation', 'color': Color(0xFFFFCA28), 'angle': 315.0},
   ];
 
-  // Sub-emotions
   static const Map<String, List<Map<String, dynamic>>> _subEmotions = {
     'Joy': [
       {'name': 'Optimism', 'color': Color(0xFFFFE082)},
@@ -132,11 +129,10 @@ class _EmotionFlowerScreenState extends State<EmotionFlowerScreen>
   }
 
   void _onSubEmotionTap(String subEmotion) {
-    print('Sub-emotion tapped: $subEmotion'); // Debug
+    print('Sub-emotion tapped: $subEmotion');
     
     setState(() {
       _selectedSubEmotion = subEmotion;
-      // Update mood status based on base emotion
       if (_selectedBaseEmotion != null) {
         final moodData = _emotionToMood[_selectedBaseEmotion!];
         if (moodData != null) {
@@ -164,7 +160,7 @@ class _EmotionFlowerScreenState extends State<EmotionFlowerScreen>
           .limit(1)
           .get();
 
-      return snapshot.docs.isEmpty; // True if no duplicate, False if exists
+      return snapshot.docs.isEmpty;
     } on FirebaseException catch (e) {
       print('Firebase error checking duplicate: $e');
       rethrow;
@@ -183,7 +179,6 @@ class _EmotionFlowerScreenState extends State<EmotionFlowerScreen>
     setState(() => _isSaving = true);
 
     try {
-      // Ensure the user is authenticated before attempting reads/writes.
       final uid = FirebaseAuth.instance.currentUser?.uid;
       if (uid == null) {
         if (mounted) _showErrorDialog('Please sign in to save your emotions.');
@@ -220,7 +215,6 @@ class _EmotionFlowerScreenState extends State<EmotionFlowerScreen>
             'timestamp': Timestamp.fromDate(DateTime.now()),
         });
 
-      // Also upsert a `daily_records` document so the calendar shows today's check-in
       try {
         final now = DateTime.now();
         final localMidnight = DateTime(now.year, now.month, now.day);
@@ -382,7 +376,7 @@ class _EmotionFlowerScreenState extends State<EmotionFlowerScreen>
                               : [],
                           expansionProgress: _animation.value,
                         ),
-                        size: const Size(380, 380),
+                        size: const Size(400, 400),
                       ),
                     );
                   },
@@ -520,7 +514,7 @@ class _EmotionFlowerScreenState extends State<EmotionFlowerScreen>
   }
 
   void _handleTap(TapUpDetails details) {
-    final size = 380.0;
+    final size = 400.0;
     final center = Offset(size / 2, size / 2);
     final localPosition = details.localPosition;
     
@@ -528,7 +522,6 @@ class _EmotionFlowerScreenState extends State<EmotionFlowerScreen>
     final dy = localPosition.dy - center.dy;
     final distance = math.sqrt(dx * dx + dy * dy);
     
-    // Calcular ángulo (0° = derecha, sentido horario)
     double angle = math.atan2(dy, dx) * 180 / math.pi;
     if (angle < 0) angle += 360;
     
@@ -537,8 +530,7 @@ class _EmotionFlowerScreenState extends State<EmotionFlowerScreen>
     print('Is Expanded: $_isExpanded');
     print('Selected Base: $_selectedBaseEmotion');
     
-    if (distance < 45) {
-      // Centro
+    if (distance < 50) {
       print('Tapped center');
       if (_isExpanded) {
         setState(() {
@@ -548,18 +540,15 @@ class _EmotionFlowerScreenState extends State<EmotionFlowerScreen>
         });
       }
     } else if (!_isExpanded) {
-      // Pétalos base
       print('Tapped base petal');
       _findAndSelectBaseEmotion(angle);
     } else if (_isExpanded && _selectedBaseEmotion != null) {
-      // Sub-pétalos
       print('Tapped sub-petal area');
       _findAndSelectSubEmotion(angle);
     }
   }
 
   void _findAndSelectBaseEmotion(double angle) {
-    // Cada pétalo ocupa 45 grados
     double adjustedAngle = (angle + 22.5) % 360;
     int index = (adjustedAngle / 45).floor();
     if (index >= 8) index = 0;
@@ -579,10 +568,8 @@ class _EmotionFlowerScreenState extends State<EmotionFlowerScreen>
     final baseData = _baseEmotions.firstWhere((e) => e['name'] == _selectedBaseEmotion);
     final baseAngle = baseData['angle'] as double;
     
-    // Calcular ángulo relativo al pétalo base
     double relativeAngle = angle - baseAngle;
     
-    // Normalizar al rango [-180, 180]
     while (relativeAngle > 180) {
       relativeAngle -= 360;
     }
@@ -593,17 +580,14 @@ class _EmotionFlowerScreenState extends State<EmotionFlowerScreen>
     print('Base angle: $baseAngle');
     print('Relative angle: $relativeAngle');
     
-    // Verificar si el tap está en el área de los sub-pétalos
-    // Los sub-pétalos están en un arco de -45° a +45° relativo al ángulo base
-    if (relativeAngle >= -45 && relativeAngle <= 45) {
-      // Determinar qué sub-pétalo fue tocado
+    if (relativeAngle >= -50 && relativeAngle <= 50) {
       int index;
-      if (relativeAngle < -15) {
-        index = 0; // Izquierda
-      } else if (relativeAngle < 15) {
-        index = 1; // Centro
+      if (relativeAngle < -20) {
+        index = 0;
+      } else if (relativeAngle < 20) {
+        index = 1;
       } else {
-        index = 2; // Derecha
+        index = 2;
       }
       
       print('Sub-emotion index: $index');
@@ -618,8 +602,6 @@ class _EmotionFlowerScreenState extends State<EmotionFlowerScreen>
     }
   }
 }
-
-// ─── Painter con pétalos orgánicos ────────────────────────────────────────────
 
 class _EmotionFlowerPainter extends CustomPainter {
   final List<Map<String, dynamic>> baseEmotions;
@@ -641,13 +623,11 @@ class _EmotionFlowerPainter extends CustomPainter {
     final center = Offset(size.width / 2, size.height / 2);
     final baseRadius = size.width * 0.30;
     
-    // Fondo limpio
     final bgPaint = Paint()
       ..color = const Color(0xFFF5F0F0)
       ..style = PaintingStyle.fill;
     canvas.drawRect(Rect.fromLTWH(0, 0, size.width, size.height), bgPaint);
     
-    // Dibujar pétalos base
     for (int i = 0; i < baseEmotions.length; i++) {
       final emotion = baseEmotions[i];
       final startAngle = (emotion['angle'] as double) * math.pi / 180;
@@ -660,50 +640,48 @@ class _EmotionFlowerPainter extends CustomPainter {
         color: emotion['color'] as Color,
         isSelected: selectedBase == emotion['name'],
         label: emotion['name'] as String,
+        isBasePetal: true,
       );
     }
     
-    // Dibujar sub-pétalos
     if (expansionProgress > 0 && selectedBase != null) {
       final baseAngle = baseEmotions
           .firstWhere((e) => e['name'] == selectedBase)['angle'] as double;
       
       final subRadius = baseRadius * 0.55;
-      final distanceFromCenter = baseRadius * 1.35;
+      final distanceFromCenter = baseRadius * 1.30;
       
-      // Posiciones de los sub-pétalos: -30°, 0°, +30°
-      final angles = [-30.0, 0.0, 30.0];
+      final angles = [-35.0, 0.0, 35.0];
       
       for (int i = 0; i < subEmotions.length && i < 3; i++) {
         final sub = subEmotions[i];
         final angleOffset = angles[i];
-        final startAngle = (baseAngle + angleOffset) * math.pi / 180;
         
-        final expandedDistance = distanceFromCenter * (0.7 + 0.5 * expansionProgress);
-        final expandedRadius = subRadius * (0.5 + 0.6 * expansionProgress);
+        final subAngle = (baseAngle + angleOffset) * math.pi / 180;
+        
+        final expandedDistance = distanceFromCenter * (0.85 + 0.35 * expansionProgress);
         
         final petalCenter = Offset(
-          center.dx + math.cos(baseAngle * math.pi / 180) * expandedDistance,
-          center.dy + math.sin(baseAngle * math.pi / 180) * expandedDistance,
+          center.dx + math.cos(subAngle) * expandedDistance,
+          center.dy + math.sin(subAngle) * expandedDistance,
         );
         
-        final opacity = math.min(1.0, expansionProgress * 1.3);
+        final opacity = math.min(1.0, expansionProgress * 1.2);
         
         _drawOrganicPetal(
           canvas: canvas,
           center: petalCenter,
-          radius: expandedRadius,
-          startAngle: startAngle,
+          radius: subRadius * expansionProgress,
+          startAngle: subAngle,
           color: (sub['color'] as Color).withOpacity(opacity),
           isSelected: selectedSub == sub['name'],
-          label: expansionProgress > 0.7 ? sub['name'] as String : null,
+          label: expansionProgress > 0.8 ? sub['name'] as String : null,
           isSubPetal: true,
         );
       }
     }
     
-    // Dibujar centro
-    _drawFlowerCenter(canvas, center, size.width * 0.11);
+    _drawFlowerCenter(canvas, center, size.width * 0.12);
   }
 
   void _drawOrganicPetal({
@@ -715,9 +693,10 @@ class _EmotionFlowerPainter extends CustomPainter {
     bool isSelected = false,
     String? label,
     bool isSubPetal = false,
+    bool isBasePetal = false,
   }) {
     final path = Path();
-    final petalLength = radius * (isSubPetal ? 1.15 : 1.35);
+    final petalLength = radius * (isSubPetal ? 1.25 : 1.4);
     
     final tipAngle = startAngle;
     final tipX = center.dx + math.cos(tipAngle) * petalLength;
@@ -796,8 +775,8 @@ class _EmotionFlowerPainter extends CustomPainter {
         text: label,
         center: center,
         angle: startAngle,
-        distance: petalLength * 0.55,
-        color: const Color(0xFF3A3A3A),
+        distance: petalLength * (isBasePetal ? 0.55 : 0.5),
+        color: const Color(0xFF2A2A2A),
         isSelected: isSelected,
         isSubPetal: isSubPetal,
       );
@@ -841,7 +820,7 @@ class _EmotionFlowerPainter extends CustomPainter {
     
     canvas.drawCircle(center, radius * 0.45, innerPaint);
     
-    _drawCenterText(canvas, center, 'Tap a\npetal', radius * 0.6);
+    _drawCenterText(canvas, center, 'Tap a\npetal', radius * 0.65);
   }
 
   void _drawPetalLabel({
@@ -854,25 +833,60 @@ class _EmotionFlowerPainter extends CustomPainter {
     required bool isSelected,
     required bool isSubPetal,
   }) {
-    final fontSize = isSubPetal ? 9.0 : 10.0;
+    final fontSize = isSubPetal ? 11.0 : 12.0;
+    
+    // Format text for better display
+    String displayText = text;
+    if (text.length > 10) {
+      final midPoint = text.length ~/ 2;
+      displayText = '${text.substring(0, midPoint)}\n${text.substring(midPoint)}';
+    }
     
     final textPainter = TextPainter(
       text: TextSpan(
-        text: text,
+        text: displayText,
         style: TextStyle(
           color: color,
           fontSize: fontSize,
           fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+          letterSpacing: 0.3,
+          shadows: [
+            Shadow(
+              color: Colors.white.withOpacity(0.9),
+              blurRadius: 4,
+              offset: const Offset(1, 1),
+            ),
+          ],
         ),
       ),
       textDirection: TextDirection.ltr,
+      textAlign: TextAlign.center,
     );
     
     textPainter.layout();
     
-    final textAngle = angle;
-    final x = center.dx + math.cos(textAngle) * distance - textPainter.width / 2;
-    final y = center.dy + math.sin(textAngle) * distance - textPainter.height / 2;
+    // Adjust position to be more centered in the petal
+    final x = center.dx + math.cos(angle) * distance - textPainter.width / 2;
+    final y = center.dy + math.sin(angle) * distance - textPainter.height / 2;
+    
+    // Add subtle background for better readability
+    final bgRect = Rect.fromLTWH(
+      x - 3,
+      y - 2,
+      textPainter.width + 6,
+      textPainter.height + 4,
+    );
+    
+    final bgPaint = Paint()
+      ..color = Colors.white.withOpacity(isSelected ? 0.0 : 0.6)
+      ..style = PaintingStyle.fill;
+    
+    if (!isSelected) {
+      canvas.drawRRect(
+        RRect.fromRectAndRadius(bgRect, const Radius.circular(6)),
+        bgPaint,
+      );
+    }
     
     textPainter.paint(canvas, Offset(x, y));
   }
@@ -888,6 +902,7 @@ class _EmotionFlowerPainter extends CustomPainter {
             color: const Color(0xFF5A5A5A),
             fontSize: fontSize,
             fontWeight: FontWeight.w400,
+            letterSpacing: 0.2,
           ),
         ),
         textDirection: TextDirection.ltr,
@@ -896,7 +911,7 @@ class _EmotionFlowerPainter extends CustomPainter {
       textPainter.layout();
       
       final x = center.dx - textPainter.width / 2;
-      final y = center.dy - textPainter.height / 2 + (i - 0.5) * fontSize * 1.2;
+      final y = center.dy - textPainter.height / 2 + (i - 0.5) * fontSize * 1.3;
       
       textPainter.paint(canvas, Offset(x, y));
     }

@@ -6,6 +6,7 @@ import '../../../../../core/theme/app_colors.dart';
 import 'calendar_screen.dart';
 import 'checkin_screen.dart';
 import 'patient_profile_screen.dart';
+import 'wellness_tools_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -417,17 +418,15 @@ class _HomeScreenState extends State<HomeScreen> {
   // RIGHT
   // ────────────────────────────────────────────
 
-  Widget _rightColumn() {
-    return Column(
-      children: [
-        _pinCard(),
-        const SizedBox(height: 14),
-        _breathingCard(),
-        const SizedBox(height: 14),
-        _activitiesCard(),
-      ],
-    );
-  }
+ Widget _rightColumn() {
+  return Column(
+    children: [
+      _pinCard(),
+      const SizedBox(height: 14),
+      _wellnessToolsCard(),  // ← ESTE ES EL NUEVO WIDGET
+    ],
+  );
+}
 
   Widget _pinCard() {
     return _card(
@@ -462,98 +461,140 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _breathingCard() {
-    return _card(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'Respiración 4-5-4',
-            style: TextStyle(
-              fontWeight: FontWeight.w700,
-              color: AppColors.textPrimary,
-            ),
-          ),
-          const SizedBox(height: 12),
-          Row(
-            children: [
-              Expanded(child: _breathStep('4', 'Inhala')),
-              _stepSep(),
-              Expanded(child: _breathStep('5', 'Sostén')),
-              _stepSep(),
-              Expanded(child: _breathStep('4', 'Exhala')),
-            ],
-          ),
-          const SizedBox(height: 12),
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primary,
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(vertical: 13),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-              ),
-              onPressed: () {},
-              child: const Text('Iniciar ejercicio'),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
+// ────────────────────────────────────────────
+// WELLNESS TOOLS SECTION
+// ────────────────────────────────────────────
 
-  Widget _activitiesCard() {
-    return _card(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                'Actividades rápidas',
-                style: TextStyle(
-                  fontWeight: FontWeight.w700,
-                  color: AppColors.textPrimary,
-                ),
+Widget _wellnessToolsCard() {
+  return _card(
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              'Wellness Tools',
+              style: TextStyle(
+                fontWeight: FontWeight.w700,
+                fontSize: 16,
+                color: AppColors.textPrimary,
               ),
-              Text(
-                'Ver todas',
+            ),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              decoration: BoxDecoration(
+                color: AppColors.primary.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Text(
+                'Self-care',
                 style: TextStyle(
-                  fontSize: 12,
+                  fontSize: 10,
+                  fontWeight: FontWeight.w600,
                   color: AppColors.primary,
                 ),
               ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          LayoutBuilder(
-            builder: (context, constraints) {
-              int count = constraints.maxWidth > 500 ? 3 : 2;
+            ),
+          ],
+        ),
+        const SizedBox(height: 16),
+        
+        // 4-5-4 Breathing
+        _wellnessToolItem(
+          icon: Icons.air_rounded,
+          title: '4-5-4 Breathing',
+          subtitle: 'Calm your nervous system',
+          color: const Color(0xFF4CAF50),
+          onTap: () => _showExercise(const BreathingExerciseScreen()),
+        ),
+        
+        const Divider(height: 16, color: AppColors.divider),
+        
+        // 5-4-3-2-1 Grounding
+        _wellnessToolItem(
+          icon: Icons.psychology_rounded,
+          title: '5-4-3-2-1 Grounding',
+          subtitle: 'Sensory distraction for anxiety',
+          color: const Color(0xFF42A5F5),
+          onTap: () => _showExercise(const GroundingExerciseScreen()),
+        ),
+        
+        const Divider(height: 16, color: AppColors.divider),
+        
+        // Guided Mini-Conversation
+        _wellnessToolItem(
+          icon: Icons.chat_bubble_rounded,
+          title: 'Mindful Check-in',
+          subtitle: 'Guided reflection (2-5 min)',
+          color: const Color(0xFFFF9800),
+          onTap: () => _showExercise(const GuidedConversationScreen()),
+        ),
+      ],
+    ),
+  );
+}
 
-              return GridView.count(
-                crossAxisCount: count,
-                childAspectRatio: 1.4,
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                crossAxisSpacing: 8,
-                mainAxisSpacing: 8,
-                children: [
-                  _activityCard('Caminar', '5 min', Icons.directions_walk_rounded),
-                  _activityCard('Agua', '2 min', Icons.water_drop_rounded),
-                  _activityCard('Música', '3 min', Icons.music_note_rounded),
-                  _activityCard('Estiramiento', '5 min', Icons.accessibility_new_rounded),
-                ],
-              );
-            },
+void _showExercise(Widget screen) {
+  showModalBottomSheet(
+    context: context,
+    isScrollControlled: true,
+    backgroundColor: Colors.transparent,
+    builder: (context) => DraggableScrollableSheet(
+      initialChildSize: 0.75,
+      minChildSize: 0.5,
+      maxChildSize: 0.88,
+      builder: (_, controller) => Container(
+        decoration: const BoxDecoration(
+          color: AppColors.surface,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        ),
+        child: screen,
+      ),
+    ),
+  );
+}
+
+Widget _wellnessToolItem({
+  required IconData icon,
+  required String title,
+  required String subtitle,
+  required Color color,
+  required VoidCallback onTap,
+}) {
+  return InkWell(
+    onTap: onTap,
+    borderRadius: BorderRadius.circular(12),
+    child: Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      child: Row(
+        children: [
+          Container(
+            width: 48,
+            height: 48,
+            decoration: BoxDecoration(
+              color: color.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Icon(icon, color: color, size: 24),
           ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(title, style: TextStyle(fontWeight: FontWeight.w600, fontSize: 15, color: AppColors.textPrimary)),
+                const SizedBox(height: 2),
+                Text(subtitle, style: TextStyle(fontSize: 12, color: AppColors.textSecondary)),
+              ],
+            ),
+          ),
+          Icon(Icons.arrow_forward_ios_rounded, size: 14, color: AppColors.textSecondary.withOpacity(0.5)),
         ],
       ),
-    );
-  }
+    ),
+  );
+}
 
   // ────────────────────────────────────────────
   // UI BASE
