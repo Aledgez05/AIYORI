@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 class PatientDetailScreen extends StatelessWidget {
   final Map<String, dynamic> patient;
@@ -7,7 +8,10 @@ class PatientDetailScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final riskColor = _getRiskColor(patient['risk']);
+    final rawRisk = (patient['risk'] ?? patient['riskLevel'] ?? '').toString();
+    final risk = _mapRiskToSpanish(rawRisk);
+    final riskColor = _getRiskColor(risk);
+    final avatarText = (patient['avatar'] as String?) ?? _initials(patient['name'] as String?);
     
     return Scaffold(
       body: Container(
@@ -44,6 +48,30 @@ class PatientDetailScreen extends StatelessWidget {
                     ),
                   ),
                 ),
+                actions: [
+                  IconButton(
+                    onPressed: () {
+                      final uid = (patient['patientId'] ?? patient['uid'] ?? patient['id'] ?? '').toString();
+                      if (uid.isEmpty) {
+                        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('UID no disponible')));
+                        return;
+                      }
+                      Clipboard.setData(ClipboardData(text: uid));
+                      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('UID copiado al portapapeles')));
+                    },
+                    icon: Container(
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: const Icon(
+                        Icons.copy_rounded,
+                        color: Color(0xFF6EC1C2),
+                      ),
+                    ),
+                  ),
+                ],
                 flexibleSpace: FlexibleSpaceBar(
                   background: Container(
                     decoration: BoxDecoration(
@@ -73,7 +101,7 @@ class PatientDetailScreen extends StatelessWidget {
                           ),
                           child: Center(
                             child: Text(
-                              patient['avatar'],
+                              avatarText,
                               style: const TextStyle(
                                 fontSize: 28,
                                 fontWeight: FontWeight.w600,
@@ -102,7 +130,7 @@ class PatientDetailScreen extends StatelessWidget {
                             borderRadius: BorderRadius.circular(20),
                           ),
                           child: Text(
-                            '${patient['age']} años • ${patient['risk']} riesgo',
+                              '${patient['age']} años • $risk riesgo',
                             style: TextStyle(
                               fontSize: 13,
                               color: riskColor,
@@ -393,5 +421,22 @@ class PatientDetailScreen extends StatelessWidget {
       default:
         return const Color(0xFF6EC1C2);
     }
+  }
+
+  String _mapRiskToSpanish(String raw) {
+    final r = raw.toLowerCase();
+    if (r.isEmpty) return 'Bajo';
+    if (r.contains('low') || r == 'bajo') return 'Bajo';
+    if (r.contains('med') || r == 'medio') return 'Medio';
+    if (r.contains('high') || r == 'alto') return 'Alto';
+    // default
+    return raw[0].toUpperCase() + raw.substring(1);
+  }
+
+  String _initials(String? name) {
+    if (name == null || name.trim().isEmpty) return '?';
+    final parts = name.trim().split(RegExp(r'\s+'));
+    if (parts.length == 1) return parts[0].substring(0, 1).toUpperCase();
+    return (parts[0].substring(0, 1) + parts[1].substring(0, 1)).toUpperCase();
   }
 }

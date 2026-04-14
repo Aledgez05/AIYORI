@@ -1,0 +1,127 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Helper functions
+    function isSignedIn() { return request.auth != null; }
+    function isAdmin() { return isSignedIn() && request.auth.token.admin == true; }
+
+    // ------------------
+    // Users collection
+    // ------------------
+    match /users/{userId} {
+      // Allow a signed-in user to create their own profile but prevent them
+      // from assigning therapists or setting protected fields at creation.
+      allow create: if isSignedIn()
+        && request.auth.uid == userId
+        && !("assignedTherapistId" in request.resource.data)
+        && !("therapistIds" in request.resource.data)
+        && request.resource.data.uid == userId;
+
+      // Read allowed for owner, assigned therapist(s) or admin
+      allow read: if isSignedIn() && (
+        request.auth.uid == userId ||
+        (resource.data.keys().hasAny(["assignedTherapistId"]) && resource.data.assignedTherapistId == request.auth.uid) ||
+        (resource.data.keys().hasAny(["therapistIds"]) && request.auth.uid in resource.data.therapistIds) ||
+        isAdmin()
+      );
+
+      // Users can update their profile but cannot change protected fields
+      // such as assignedTherapistId, therapistIds, role, or email — except
+      // when a therapist has created a valid short-lived link_request.
+      allow update: if isSignedIn() && (
+        // Owner updates: keep previous constraints
+        (request.auth.uid == userId
+          && request.resource.data.uid == resource.data.uid
+          && ( !("assignedTherapistId" in request.resource.data) || request.resource.data.assignedTherapistId == resource.data.assignedTherapistId )
+          && ( !("therapistIds" in request.resource.data) || request.resource.data.therapistIds == resource.data.therapistIds )
+          && ( !("role" in request.resource.data) || request.resource.data.role == resource.data.role )
+          && ( !("email" in request.resource.data) || request.resource.data.email == resource.data.email )
+        )
+        ||
+        // Therapist-initiated linking: allow a therapist to set themselves as
+        // the assignedTherapist (and add to therapistIds) when a valid
+        // link_request exists for them. Restrict changes to a small set of
+        // safe fields.
+        (
+          request.auth.uid != null
+          && exists(/databases/$(database)/documents/users/$(userId)/link_requests/$(request.auth.uid))
+          // Therapist must be assigning themselves
+          && (request.resource.data.assignedTherapistId == request.auth.uid || (request.resource.data.therapistIds is list && request.auth.uid in request.resource.data.therapistIds))
+          // Ensure protected top-level fields are unchanged
+          && request.resource.data.uid == resource.data.uid
+          && request.resource.data.name == resource.data.name
+          && request.resource.data.email == resource.data.email
+          && request.resource.data.role == resource.data.role
+          && request.resource.data.createdAt == resource.data.createdAt
+          // If these fields existed before, they must remain unchanged
+          && ( !('pin' in resource.data) || request.resource.data.pin == resource.data.pin )
+          && ( !('pinHash' in resource.data) || request.resource.data.pinHash == resource.data.pinHash )
+          && ( !('professionalType' in resource.data) || request.resource.data.professionalType == resource.data.professionalType )
+          && ( !('professionalLicense' in resource.data) || request.resource.data.professionalLicense == resource.data.professionalLicense )
+          && ( !('profile' in resource.data) || request.resource.data.profile == resource.data.profile )
+          && ( !('summary' in resource.data) || request.resource.data.summary == resource.data.summary )
+        )
+      );
+
+      allow delete: if isAdmin() || (isSignedIn() && request.auth.uid == userId);
+    }
+
+    // ------------------
+    // Daily records (user subcollection)
+    // ------------------
+    match /users/{userId}/daily_records/{recordId} {
+      // Owners may write their own daily records
+      allow create, update, delete: if isSignedIn() && request.auth.uid == userId;
+
+      // Read allowed for owner, assigned therapist(s) or admin
+      allow read: if isSignedIn() && (
+        request.auth.uid == userId ||
+        (get(/databases/$(database)/documents/users/$(userId)).data.keys().hasAny(["assignedTherapistId"]) && get(/databases/$(database)/documents/users/$(userId)).data.assignedTherapistId == request.auth.uid) ||
+        (get(/databases/$(database)/documents/users/$(userId)).data.keys().hasAny(["therapistIds"]) && request.auth.uid in get(/databases/$(database)/documents/users/$(userId)).data.therapistIds) ||
+        isAdmin()
+      );
+    }
+
+    // ------------------
+    // Materialized therapist patients
+    // ------------------
+    // These collections are maintained server-side (Cloud Functions / admin SDK).
+    // Therapists may read their own materialized patient summaries. Writes
+    // are limited to admin/service accounts.
+    match /therapists/{therapistId}/patients/{patientId} {
+      allow read: if isSignedIn() && (request.auth.uid == therapistId || isAdmin());
+      allow create, update, delete: if isAdmin();
+    }
+
+    // ------------------
+    // Link requests (no-CloudFunction linking flow)
+    // ------------------
+    // Therapists create a short-lived link request under the patient document
+    // providing the patient's `linkCode`. Rules validate the code and expiry.
+    match /users/{userId}/link_requests/{therapistId} {
+      // Create only if authenticated therapist provides the correct pin/code
+      // and sets createdAt == request.time. The request should be short-lived.
+      allow create: if isSignedIn()
+        && request.auth.uid == therapistId
+        && request.resource.data.keys().hasOnly(['createdAt','pin'])
+        && request.resource.data.createdAt == request.time
+        && (request.resource.data.pin == get(/databases/$(database)/documents/users/$(userId)).data.linkCode
+          || request.resource.data.pin == get(/databases/$(database)/documents/users/$(userId)).data.pin)
+        && ( !('linkCodeExpires' in get(/databases/$(database)/documents/users/$(userId)).data) || get(/databases/$(database)/documents/users/$(userId)).data.linkCodeExpires > request.time );
+
+      // Therapist and patient (and admins) can read/delete the request
+      allow read, delete: if isSignedIn() && (
+        request.auth.uid == therapistId || request.auth.uid == userId || isAdmin()
+      );
+    }
+
+    // ------------------
+    // Metrics (aggregates)
+    // ------------------
+    match /metrics/{doc=**} {
+      allow read: if isSignedIn();
+      allow write: if isAdmin();
+    }
+  }
+}

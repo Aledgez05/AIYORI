@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'patient_detail_screen.dart';
 import 'new_patient_screen.dart';
 
@@ -14,65 +16,18 @@ class _PatientsScreenState extends State<PatientsScreen> {
   String _searchQuery = '';
   String _selectedFilter = 'Todos';
 
-  final List<Map<String, dynamic>> _allPatients = [
-    {
-      'name': 'María González',
-      'age': 34,
-      'status': 'Estable',
-      'lastVisit': 'Hoy',
-      'risk': 'Bajo',
-      'nextAppointment': '15/04/2026',
-      'avatar': 'MG',
-    },
-    {
-      'name': 'Carlos Ruiz',
-      'age': 28,
-      'status': 'En progreso',
-      'lastVisit': 'Ayer',
-      'risk': 'Medio',
-      'nextAppointment': '12/04/2026',
-      'avatar': 'CR',
-    },
-    {
-      'name': 'Ana Martínez',
-      'age': 45,
-      'status': 'Requiere atención',
-      'lastVisit': '10/04/2026',
-      'risk': 'Alto',
-      'nextAppointment': '11/04/2026',
-      'avatar': 'AM',
-    },
-    {
-      'name': 'Juan Pérez',
-      'age': 52,
-      'status': 'Estable',
-      'lastVisit': '08/04/2026',
-      'risk': 'Bajo',
-      'nextAppointment': '20/04/2026',
-      'avatar': 'JP',
-    },
-    {
-      'name': 'Laura Sánchez',
-      'age': 31,
-      'status': 'En progreso',
-      'lastVisit': '09/04/2026',
-      'risk': 'Medio',
-      'nextAppointment': '14/04/2026',
-      'avatar': 'LS',
-    },
-  ];
+  // Patients are loaded from Firestore: therapists/{therapistId}/patients
+  // We use a StreamBuilder in the UI to render them.
 
-  List<Map<String, dynamic>> get _filteredPatients {
-    return _allPatients.where((patient) {
-      final matchesSearch = patient['name']
-          .toString()
-          .toLowerCase()
-          .contains(_searchQuery.toLowerCase());
-      
+  List<Map<String, dynamic>> _applyFilters(List<Map<String, dynamic>> patients) {
+    return patients.where((patient) {
+      final name = (patient['name'] ?? '').toString().toLowerCase();
+      final matchesSearch = name.contains(_searchQuery.toLowerCase());
+
       final matchesFilter = _selectedFilter == 'Todos' ||
-          patient['risk'] == _selectedFilter ||
-          patient['status'] == _selectedFilter;
-      
+          (patient['risk'] ?? patient['riskLevel'] ?? '').toString() == _selectedFilter ||
+          (patient['status'] ?? '').toString() == _selectedFilter;
+
       return matchesSearch && matchesFilter;
     }).toList();
   }
@@ -141,6 +96,21 @@ class _PatientsScreenState extends State<PatientsScreen> {
                           ),
                         ),
                         IconButton(
+                          onPressed: () => _showLinkPatientDialog(),
+                          icon: Container(
+                            padding: const EdgeInsets.all(10),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFF6EC1C2).withOpacity(0.08),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: const Icon(
+                              Icons.vpn_key_rounded,
+                              color: Color(0xFF6EC1C2),
+                              size: 20,
+                            ),
+                          ),
+                        ),
+                        IconButton(
                           onPressed: () {
                             Navigator.push(
                               context,
@@ -180,25 +150,71 @@ class _PatientsScreenState extends State<PatientsScreen> {
 
               const SizedBox(height: 16),
 
-              // Stats summary
+              // Stats summary (loaded from Firestore)
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 20),
-                child: _buildStatsSummary(),
+                child: Builder(builder: (context) {
+                    final therapistId = FirebaseAuth.instance.currentUser?.uid;
+                    if (therapistId == null) return _buildStatsSummary(<Map<String,dynamic>>[]);
+
+                    // If materialized collection isn't available (no deployed functions),
+                    // query `users` where `assignedTherapistId == therapistId` as a fallback.
+                    final stream = FirebaseFirestore.instance
+                      .collection('users')
+                      .where('assignedTherapistId', isEqualTo: therapistId)
+                      .snapshots();
+
+                  return StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
+                    stream: stream,
+                    builder: (context, snapshot) {
+                      if (snapshot.connectionState == ConnectionState.waiting) {
+                        return Container(height: 100, alignment: Alignment.center, child: const CircularProgressIndicator());
+                      }
+                      final patients = snapshot.hasData
+                          ? snapshot.data!.docs.map((d) => _normalizePatient(d)).toList()
+                          : <Map<String, dynamic>>[];
+                      return _buildStatsSummary(patients);
+                    },
+                  );
+                }),
               ),
 
               const SizedBox(height: 16),
 
-              // Patients list
+              // Patients list (streamed)
               Expanded(
-                child: _filteredPatients.isEmpty
-                    ? _buildEmptyState()
-                    : ListView.builder(
+                child: Builder(builder: (context) {
+                    final therapistId = FirebaseAuth.instance.currentUser?.uid;
+                    if (therapistId == null) return _buildEmptyState();
+
+                    // Read direct user docs assigned to this therapist if materialized
+                    // patients collection is not present (avoids requiring deployed functions).
+                    final stream = FirebaseFirestore.instance
+                      .collection('users')
+                      .where('assignedTherapistId', isEqualTo: therapistId)
+                      .snapshots();
+
+                  return StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
+                    stream: stream,
+                    builder: (context, snapshot) {
+                      if (snapshot.connectionState == ConnectionState.waiting) return const Center(child: CircularProgressIndicator());
+                      final patients = snapshot.hasData
+                          ? snapshot.data!.docs.map((d) => _normalizePatient(d)).toList()
+                          : <Map<String, dynamic>>[];
+
+                      final filtered = _applyFilters(patients);
+                      if (filtered.isEmpty) return _buildEmptyState();
+
+                      return ListView.builder(
                         padding: const EdgeInsets.symmetric(horizontal: 20),
-                        itemCount: _filteredPatients.length,
+                        itemCount: filtered.length,
                         itemBuilder: (context, index) {
-                          return _buildPatientCard(_filteredPatients[index]);
+                          return _buildPatientCard(filtered[index]);
                         },
-                      ),
+                      );
+                    },
+                  );
+                }),
               ),
             ],
           ),
@@ -206,6 +222,102 @@ class _PatientsScreenState extends State<PatientsScreen> {
       ),
       
     );
+  }
+
+  void _showLinkPatientDialog() {
+    final TextEditingController idController = TextEditingController();
+    final TextEditingController pinController = TextEditingController();
+
+    showDialog<void>(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('Vincular paciente'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: idController,
+                decoration: const InputDecoration(
+                  labelText: 'ID del paciente (UID)',
+                ),
+              ),
+              const SizedBox(height: 8),
+              TextField(
+                controller: pinController,
+                decoration: const InputDecoration(
+                  labelText: 'PIN del paciente',
+                ),
+                obscureText: true,
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('Cancelar'),
+            ),
+            ElevatedButton(
+              onPressed: () async {
+                final idOrEmail = idController.text.trim();
+                final pin = pinController.text.trim();
+                if (idOrEmail.isEmpty || pin.isEmpty) {
+                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Completa los campos')));
+                  return;
+                }
+                if (idOrEmail.contains('@')) {
+                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Ingresa el UID del paciente, no el email')));
+                  return;
+                }
+                Navigator.of(context).pop();
+                await _linkPatient(idOrEmail, pin);
+              },
+              child: const Text('Vincular'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Future<void> _linkPatient(String idOrEmail, String pin) async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
+    final therapistId = user.uid;
+    final patientId = idOrEmail;
+    final patientRef = FirebaseFirestore.instance.collection('users').doc(patientId);
+    final linkReqRef = patientRef.collection('link_requests').doc(therapistId);
+
+    try {
+      // 1) Create link request (serverTimestamp resolves to request.time in rules)
+      await linkReqRef.set({
+        'createdAt': FieldValue.serverTimestamp(),
+        'pin': pin,
+      });
+
+      // 2) Update patient doc to set assignedTherapistId and add therapist to therapistIds
+      await patientRef.update({
+        'assignedTherapistId': therapistId,
+        'therapistIds': FieldValue.arrayUnion([therapistId]),
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
+
+      // 3) Optionally remove the link request to avoid storing PIN longer than needed
+      await linkReqRef.delete();
+
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Paciente vinculado correctamente')));
+    } on FirebaseException catch (e) {
+      // Map common errors to friendly messages
+      if (e.code == 'permission-denied') {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Permiso denegado: PIN incorrecto o no autorizado')));
+      } else if (e.code == 'not-found') {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Paciente no encontrado')));
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error interno: ${e.message}')));
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
+    }
   }
 
   Widget _buildSearchBar() {
@@ -303,7 +415,11 @@ class _PatientsScreenState extends State<PatientsScreen> {
     );
   }
 
-  Widget _buildStatsSummary() {
+  Widget _buildStatsSummary(List<Map<String, dynamic>> patients) {
+    final total = patients.length;
+    final highRisk = patients.where((p) => (p['risk'] ?? '').toString() == 'Alto').length;
+    final todayCount = patients.where((p) => (p['lastVisit'] ?? '').toString().toLowerCase().contains('hoy')).length;
+
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -320,15 +436,15 @@ class _PatientsScreenState extends State<PatientsScreen> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceAround,
         children: [
-          _statItem('${_allPatients.length}', 'Total'),
+          _statItem('$total', 'Total'),
           Container(width: 1, height: 30, color: const Color(0xFFE0E8E6)),
           _statItem(
-            _allPatients.where((p) => p['risk'] == 'Alto').length.toString(),
+            '$highRisk',
             'Alto riesgo',
             color: const Color(0xFFE57373),
           ),
           Container(width: 1, height: 30, color: const Color(0xFFE0E8E6)),
-          _statItem('3', 'Hoy', icon: Icons.today_rounded),
+          _statItem('$todayCount', 'Hoy', icon: Icons.today_rounded),
         ],
       ),
     );
@@ -552,5 +668,51 @@ class _PatientsScreenState extends State<PatientsScreen> {
       default:
         return const Color(0xFF6EC1C2);
     }
+  }
+
+  Map<String, dynamic> _normalizePatient(QueryDocumentSnapshot<Map<String, dynamic>> doc) {
+    final data = doc.data();
+    final name = (data['name'] ?? data['profile']?['displayName'] ?? '').toString();
+    final age = data['age'] ?? data['profile']?['age'] ?? '';
+    final avatar = (data['avatar'] as String?) ?? (data['profile']?['avatar'] as String?) ?? _initials(name);
+    final rawRisk = (data['risk'] ?? data['riskLevel'] ?? data['profile']?['riskLevel'] ?? '').toString();
+    final risk = _mapRiskToSpanish(rawRisk);
+    final lastCheckIn = data['lastCheckIn'] ?? data['summary']?['lastCheckIn'];
+    final lastVisit = lastCheckIn is Timestamp ? _formatDate(lastCheckIn.toDate()) : (data['lastVisit'] ?? '');
+    final nextAppointment = data['nextAppointment'] ?? data['summary']?['nextAppointment'] ?? '';
+    final status = data['status'] ?? data['summary']?['status'] ?? '';
+
+    return {
+      'patientId': doc.id,
+      'name': name,
+      'age': age,
+      'avatar': avatar,
+      'risk': risk,
+      'lastVisit': lastVisit,
+      'nextAppointment': nextAppointment,
+      'status': status,
+    };
+  }
+
+  String _mapRiskToSpanish(String raw) {
+    final r = raw.toLowerCase();
+    if (r.isEmpty) return 'Bajo';
+    if (r.contains('low') || r == 'bajo') return 'Bajo';
+    if (r.contains('med') || r == 'medio') return 'Medio';
+    if (r.contains('high') || r == 'alto') return 'Alto';
+    return raw[0].toUpperCase() + raw.substring(1);
+  }
+
+  String _initials(String? name) {
+    if (name == null || name.trim().isEmpty) return '?';
+    final parts = name.trim().split(RegExp(r'\s+'));
+    if (parts.length == 1) return parts[0].substring(0, 1).toUpperCase();
+    return (parts[0].substring(0, 1) + parts[1].substring(0, 1)).toUpperCase();
+  }
+
+  String _formatDate(DateTime dt) {
+    final now = DateTime.now();
+    if (dt.year == now.year && dt.month == now.month && dt.day == now.day) return 'Hoy';
+    return '${dt.day.toString().padLeft(2, '0')}/${dt.month.toString().padLeft(2, '0')}/${dt.year}';
   }
 }

@@ -6,7 +6,9 @@ import 'calendar_screen.dart';
 import 'emotion_flower_screen.dart';
 
 class CheckInScreen extends StatefulWidget {
-  const CheckInScreen({super.key});
+  final bool todayOnly; // If true, only allows registering for today
+  
+  const CheckInScreen({super.key, this.todayOnly = false});
 
   @override
   State<CheckInScreen> createState() => _CheckInScreenState();
@@ -496,89 +498,134 @@ class _CheckInScreenState extends State<CheckInScreen> {
               const SizedBox(height: 36),
 
               // ── Selector de fecha ────────────────────────────────────────
-              const Text(
-                'Registrar para qué día',
-                style: TextStyle(
-                  fontSize: 15,
-                  fontWeight: FontWeight.w600,
-                  color: AppColors.textPrimary,
+              // Only show date selector if not in todayOnly mode
+              if (!widget.todayOnly) ...[
+                const Text(
+                  'Registrar para qué día',
+                  style: TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.textPrimary,
+                  ),
                 ),
-              ),
-              const SizedBox(height: 12),
-              SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                child: Row(
-                  children: [
-                    for (int i = 0; i <= 2; i++)
-                      _DateButton(
-                        daysBack: i,
-                        isSelected: _selectedDate.difference(DateTime.now()).inDays == -i,
-                        onTap: () {
-                          setState(() {
-                            _selectedDate = DateTime.now().subtract(Duration(days: i));
-                          });
-                        },
-                      ),
-                  ],
+                const SizedBox(height: 12),
+                SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: Row(
+                    children: [
+                      for (int i = 0; i <= 2; i++)
+                        _DateButton(
+                          daysBack: i,
+                          isSelected: _selectedDate.difference(DateTime.now()).inDays == -i,
+                          onTap: () {
+                            setState(() {
+                              _selectedDate = DateTime.now().subtract(Duration(days: i));
+                            });
+                          },
+                        ),
+                    ],
+                  ),
                 ),
-              ),
-
-              const SizedBox(height: 24),
+                const SizedBox(height: 24),
+              ],
 
               // ── Botones guardar y calendario ─────────────────────────────
-              Row(
-                children: [
-                  Expanded(
-                    child: SizedBox(
-                      height: 52,
-                      child: ElevatedButton(
-                        onPressed: (_selectedMood == null || _isSaving) ? null : _save,
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColors.primary,
-                          foregroundColor: AppColors.textOnDark,
-                          disabledBackgroundColor: AppColors.divider,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(14),
-                          ),
-                          elevation: _selectedMood != null ? 2 : 0,
-                        ),
-                        child: _isSaving
-                            ? const SizedBox(
-                                width: 22,
-                                height: 22,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2.5,
-                                  color: Colors.white,
+              if (widget.todayOnly)
+                // Quick mode: Only save button (full width)
+                SizedBox(
+                  height: 52,
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: (_selectedMood == null || _isSaving) ? null : _save,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.primary,
+                      foregroundColor: AppColors.textOnDark,
+                      disabledBackgroundColor: AppColors.divider,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                      elevation: _selectedMood != null ? 2 : 0,
+                    ),
+                    child: _isSaving
+                        ? const SizedBox(
+                            width: 22,
+                            height: 22,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2.5,
+                              color: Colors.white,
+                            ),
+                          )
+                        : const Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(Icons.check_circle_outline, size: 18),
+                              SizedBox(width: 8),
+                              Text(
+                                'Guardar check-in',
+                                style: TextStyle(
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.w600,
                                 ),
-                              )
-                            : const Row(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Icon(Icons.save_outlined, size: 18),
-                                  SizedBox(width: 8),
-                                  Text(
-                                    'Guardar',
-                                    style: TextStyle(
-                                      fontSize: 15,
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                                  ),
-                                ],
                               ),
+                            ],
+                          ),
+                  ),
+                )
+              else
+                // Full mode: Save and Calendar buttons
+                Row(
+                  children: [
+                    Expanded(
+                      child: SizedBox(
+                        height: 52,
+                        child: ElevatedButton(
+                          onPressed: (_selectedMood == null || _isSaving) ? null : _save,
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppColors.primary,
+                            foregroundColor: AppColors.textOnDark,
+                            disabledBackgroundColor: AppColors.divider,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(14),
+                            ),
+                            elevation: _selectedMood != null ? 2 : 0,
+                          ),
+                          child: _isSaving
+                              ? const SizedBox(
+                                  width: 22,
+                                  height: 22,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2.5,
+                                    color: Colors.white,
+                                  ),
+                                )
+                              : const Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Icon(Icons.save_outlined, size: 18),
+                                    SizedBox(width: 8),
+                                    Text(
+                                      'Guardar',
+                                      style: TextStyle(
+                                        fontSize: 15,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                        ),
                       ),
                     ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: SizedBox(
-                      height: 52,
-                      child: OutlinedButton(
-                        onPressed: () {
-                          Navigator.pushReplacement(
-                            context,
-                            MaterialPageRoute(builder: (_) => const CalendarScreen()),
-                          );
-                        },
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: SizedBox(
+                        height: 52,
+                        child: OutlinedButton(
+                          onPressed: () {
+                            Navigator.pushReplacement(
+                              context,
+                              MaterialPageRoute(builder: (_) => const CalendarScreen()),
+                            );
+                          },
                         style: OutlinedButton.styleFrom(
                           foregroundColor: AppColors.primary,
                           side: const BorderSide(color: AppColors.primary, width: 2),
