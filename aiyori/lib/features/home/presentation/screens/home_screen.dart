@@ -5,8 +5,8 @@ import 'package:firebase_auth/firebase_auth.dart';
 import '../../../../../core/theme/app_colors.dart';
 import 'calendar_screen.dart';
 import 'checkin_screen.dart';
+import 'patient_profile_screen.dart';
 import 'wellness_tools_screen.dart';
-
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -111,7 +111,7 @@ class _HomeScreenState extends State<HomeScreen> {
         items: const [
           BottomNavigationBarItem(
             icon: Icon(Icons.home_rounded),
-            label: 'Inicio',
+            label: 'Home',
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.favorite_rounded),
@@ -119,11 +119,11 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.calendar_month_rounded),
-            label: 'Calendario',
+            label: 'Calendar',
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.person_outline_rounded),
-            label: 'Perfil',
+            label: 'Profile',
           ),
         ],
       ),
@@ -148,7 +148,10 @@ class _HomeScreenState extends State<HomeScreen> {
         );
         break;
       case 3:
-        // Navegar a perfil (por implementar)
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => const ProfileScreen()),
+        );
         break;
     }
   }

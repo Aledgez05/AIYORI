@@ -155,22 +155,22 @@ class PatientDetailScreen extends StatelessWidget {
                       children: [
                         _quickAction(
                           Icons.add_rounded,
-                          'Nueva cita',
+                          'New appt',
                           () {},
                         ),
                         _quickAction(
                           Icons.message_rounded,
-                          'Mensaje',
+                          'Menssage',
                           () {},
                         ),
                         _quickAction(
                           Icons.note_add_rounded,
-                          'Nota',
+                          'Notes',
                           () {},
                         ),
                         _quickAction(
                           Icons.analytics_rounded,
-                          'Estadísticas',
+                          'Stats',
                           () {},
                         ),
                       ],
@@ -178,12 +178,13 @@ class PatientDetailScreen extends StatelessWidget {
                     
                     const SizedBox(height: 24),
                     
+                    
                     // Contact info
                     _buildInfoCard(
-                      'Información de contacto',
+                      'Contact Info',
                       [
-                        _buildInfoRow(Icons.email_outlined, 'Email', 'maria.g@email.com'),
-                        _buildInfoRow(Icons.phone_outlined, 'Teléfono', '+34 612 345 678'),
+                        _buildInfoRow(Icons.email_outlined, 'Email', patient['email'] ?? 'Not provided'),
+                        _buildInfoRow(Icons.phone_outlined, 'Phone', patient['phone'] ?? 'Not provided'),
                       ],
                     ),
                     
@@ -191,11 +192,11 @@ class PatientDetailScreen extends StatelessWidget {
                     
                     // Medical info
                     _buildInfoCard(
-                      'Información clínica',
+                      'Medical Info',
                       [
-                        _buildInfoRow(Icons.event_available, 'Próxima cita', '15/04/2026 - 09:00'),
-                        _buildInfoRow(Icons.history, 'Última sesión', '10/04/2026'),
-                        _buildInfoRow(Icons.assignment, 'Sesiones totales', '12'),
+                        _buildInfoRow(Icons.event_available, 'Next Appointment', patient['nextAppointment'] ?? 'Not scheduled'),
+                        _buildInfoRow(Icons.history, 'Last Session', patient['lastSession'] ?? 'No sessions yet'),
+                        _buildInfoRow(Icons.assignment, 'Total Sessions', patient['totalSessions']?.toString() ?? '0'), //(patient['totalSessions'] ?? 0).toString()),
                       ],
                     ),
                     
