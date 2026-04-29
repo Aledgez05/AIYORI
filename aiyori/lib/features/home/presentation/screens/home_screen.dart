@@ -7,6 +7,7 @@ import 'calendar_screen.dart';
 import 'checkin_screen.dart';
 import 'patient_profile_screen.dart';
 import 'wellness_tools_screen.dart';
+import 'inspiration_board.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -23,28 +24,19 @@ class _HomeScreenState extends State<HomeScreen>
   late Animation<double> _pressAnimation;
   bool _isPressed = false;
 
-  @override
+    @override
   void initState() {
     super.initState();
     _pressController = AnimationController(
-      duration: const Duration(milliseconds: 200),
+      duration: const Duration(milliseconds: 120),
       vsync: this,
     );
-
     _pressAnimation = Tween<double>(begin: 1.0, end: 0.85).animate(
       CurvedAnimation(
         parent: _pressController,
         curve: Curves.easeInOut,
       ),
     );
-
-    _pressController.addStatusListener((status) {
-      if (status == AnimationStatus.completed && _isPressed) {
-        _pressController.reverse();
-        _isPressed = false;
-        _showEmergencyDialog();
-      }
-    });
   }
 
   @override
@@ -54,16 +46,21 @@ class _HomeScreenState extends State<HomeScreen>
   }
 
   void _onEmergencyTapDown(TapDownDetails details) {
-    _isPressed = true;
     _pressController.forward();
+    setState(() => _isPressed = true);
   }
 
-  void _onEmergencyTapUp(TapUpDetails details) {}
+  void _onEmergencyTapUp(TapUpDetails details) {
+    _pressController.reverse();
+    setState(() => _isPressed = false);
+    _showEmergencyDialog();
+  }
 
   void _onEmergencyTapCancel() {
-    _isPressed = false;
     _pressController.reverse();
+    setState(() => _isPressed = false);
   }
+  
 
   @override
   Widget build(BuildContext context) {
@@ -503,7 +500,6 @@ class _HomeScreenState extends State<HomeScreen>
                 );
               },
             ),
-
             _emergencyArcadeButton(),
           ],
         ),
@@ -511,99 +507,128 @@ class _HomeScreenState extends State<HomeScreen>
     );
   }
 
-  Widget _emergencyArcadeButton() {
+Widget _emergencyArcadeButton() {
+  // If animation not ready, show button without animation
+  if (!_pressController.isCompleted && !_pressController.isDismissed && 
+      _pressController.status != AnimationStatus.forward && 
+      _pressController.status != AnimationStatus.reverse) {
     return GestureDetector(
-      onTapDown: _onEmergencyTapDown,
-      onTapUp: _onEmergencyTapUp,
-      onTapCancel: _onEmergencyTapCancel,
-      child: AnimatedBuilder(
-        animation: _pressAnimation,
-        builder: (context, child) {
-          return Transform.scale(
-            scale: _pressAnimation.value,
-            child: child,
-          );
-        },
-        child: Container(
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            gradient: const RadialGradient(
-              colors: [
-                Color(0xFFFF5252),
-                Color(0xFFD32F2F),
-              ],
-              stops: [0.3, 1.0],
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: const Color(0xFFFF5252).withOpacity(0.5),
-                blurRadius: 25,
-                spreadRadius: 3,
-              ),
-              const BoxShadow(
-                color: Color(0xFFB71C1C),
-                blurRadius: 0,
-                offset: Offset(0, 8),
-              ),
-            ],
-            border: Border.all(
-              color: Colors.white.withOpacity(0.3),
-              width: 4,
-            ),
+      onTap: _showEmergencyDialog,
+      child: Container(
+        width: 40,
+        height: 40,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          gradient: const RadialGradient(
+            colors: [Color.fromARGB(255, 210, 33, 33), Color.fromARGB(255, 179, 19, 19)],
+            stops: [0.3, 1.0],
           ),
-          child: Stack(
-            alignment: Alignment.center,
-            children: [
-              Positioned(
-                top: 8,
-                child: Container(
-                  width: 40,
-                  height: 16,
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(20),
-                    color: Colors.white.withOpacity(0.35),
-                  ),
+          boxShadow: [
+            BoxShadow(
+              color: const Color.fromARGB(255, 197, 40, 40).withOpacity(0.5),
+              blurRadius: 25,
+              spreadRadius: 3,
+            ),
+          ],
+          border: Border.all(color: Colors.white.withOpacity(0.3), width: 4),
+        ),
+        child: Stack(
+          alignment: Alignment.center,
+          children: [/* same child content... */],
+        ),
+      ),
+    );
+  }
+
+  // Original animated button
+  return GestureDetector(
+    onTapDown: _onEmergencyTapDown,
+    onTapUp: _onEmergencyTapUp,
+    onTapCancel: _onEmergencyTapCancel,
+    child: AnimatedBuilder(
+      animation: _pressAnimation,
+      builder: (context, child) {
+        return Transform.scale(
+          scale: _pressAnimation.value,
+          child: child,
+        );
+      },
+      child: Container(
+        width: 40,
+        height: 40,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          gradient: const RadialGradient(
+            colors: [Color.fromARGB(255, 189, 44, 44), Color.fromARGB(255, 255, 0, 0)],
+            stops: [0.3, 1.0],
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: const Color(0xFFFF5252).withOpacity(0.5),
+              blurRadius: 25,
+              spreadRadius: 3,
+            ),
+            const BoxShadow(
+              color: Color.fromARGB(255, 184, 12, 12),
+              blurRadius: 0,
+              offset: Offset(0, 8),
+            ),
+          ],
+          border: Border.all(color: Colors.white.withOpacity(0.3), width: 4),
+        ),
+        child: Stack(
+          alignment: Alignment.center,
+          children: [
+            Positioned(
+              top: 8,
+              child: Container(
+                width: 40,
+                height: 16,
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(20),
+                  color: Colors.white.withOpacity(0.35),
                 ),
               ),
-              Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Icon(Icons.warning_rounded, color: Colors.white, size: 32),
-                  const SizedBox(height: 4),
-                  Text(
-                    'EMERGENCY',
+            ),
+            Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(Icons.warning_rounded, color: Colors.white, size: 32),
+                const SizedBox(height: 4),
+                const Text(
+                  'EMERGENCY',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w900,
+                    fontSize: 8,
+                    letterSpacing: 1.5,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: const Text(
+                    'PRESS',
                     style: TextStyle(
-                      color: Colors.white,
+                      color: Color(0xFFD32F2F),
                       fontWeight: FontWeight.w900,
                       fontSize: 8,
                       letterSpacing: 1.5,
                     ),
                   ),
-                  const SizedBox(height: 4),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: const Text(
-                      'PRESS',
-                      style: TextStyle(
-                        color: Color(0xFFD32F2F),
-                        fontWeight: FontWeight.w900,
-                        fontSize: 8,
-                        letterSpacing: 1.5,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
+                ),
+              ],
+            ),
+          ],
         ),
       ),
-    );
-  }
+    ),
+  );
+}
 
   // ────────────────────────────────────────────
   // RIGHT
@@ -612,43 +637,10 @@ class _HomeScreenState extends State<HomeScreen>
   Widget _rightColumn() {
     return Column(
       children: [
-        _pinCard(),
         const SizedBox(height: 14),
-        _wellnessToolsCard(),
+        const SizedBox(height: 14),
+        const InspirationBoard(),
       ],
-    );
-  }
-
-  Widget _pinCard() {
-    return _card(
-      child: Row(
-        children: [
-          _iconBox(Icons.lock_rounded),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Acceso Temporal (PIN)',
-                  style: TextStyle(
-                    fontWeight: FontWeight.w600,
-                    fontSize: 14,
-                    color: AppColors.textPrimary,
-                  ),
-                ),
-                Text(
-                  'Gestiona quién ve tus registros',
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: AppColors.textSecondary,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
     );
   }
 
