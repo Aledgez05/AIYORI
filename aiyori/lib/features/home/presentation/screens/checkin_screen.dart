@@ -4,6 +4,8 @@ import 'package:firebase_auth/firebase_auth.dart';
 import '../../../../core/theme/app_colors.dart';
 import 'calendar_screen.dart';
 import 'emotion_flower_screen.dart';
+import '../../../../core/services/stats_service.dart';
+
 
 class CheckInScreen extends StatefulWidget {
   final bool todayOnly; // If true, only allows registering for today
@@ -98,7 +100,11 @@ class _CheckInScreenState extends State<CheckInScreen> {
 
     try {
       final uid = FirebaseAuth.instance.currentUser?.uid;
+      final user = FirebaseAuth.instance.currentUser;
+      print('Current user UID: ${user?.uid}');
+      print('Is authenticated: ${user != null}');
       if (uid == null) throw Exception('User not authenticated');
+
 
       final targetDate = _selectedDate;
       final docId =
@@ -141,7 +147,6 @@ class _CheckInScreenState extends State<CheckInScreen> {
         'baseEmotion': _selectedBaseEmotion,
         'subEmotion': _selectedSubEmotion,
       }, SetOptions(merge: true));
-
       if (!mounted) return;
       
       setState(() => _isSaving = false);
@@ -151,7 +156,15 @@ class _CheckInScreenState extends State<CheckInScreen> {
           backgroundColor: AppColors.accentSoft,
         ),
       );
-    } catch (e) {
+      final statsService = StatsService();
+      await statsService.updatePatientStats(uid, _selectedMood!, _selectedDate);  
+      final userDoc = await FirebaseFirestore.instance.collection('users').doc(uid).get();
+      final therapistIds = List<String>.from(userDoc.data()?['therapistIds'] ?? []);
+      for (final therapistId in therapistIds) {
+        await statsService.updateTherapistSummaryIncremental(therapistId, uid, _selectedMood!.toDouble());
+      }
+      } catch (e) {
+      
       if (!mounted) return;
       setState(() => _isSaving = false);
       ScaffoldMessenger.of(context).showSnackBar(

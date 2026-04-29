@@ -277,11 +277,13 @@ class _DayDetailPanel extends StatelessWidget {
     );
   }
 
-  Widget _moodCard(Map<String, dynamic> record) {
-    final moodIndex = record['moodIndex'] as int;
-    final moodLabel = record['moodLabel'] as String? ?? '';
-    final colorVal = record['moodColor'] as int?;
-    final color = colorVal != null ? Color(colorVal) : AppColors.primary;
+    Widget _moodCard(Map<String, dynamic> record) {
+      final moodIndex = record['moodIndex'] as int;
+      final moodLabel = record['moodLabel'] as String? ?? '';
+      final baseEmotion = record['baseEmotion'] as String?;
+      final subEmotion = record['subEmotion'] as String?;
+      final colorVal = record['moodColor'] as int?;
+      final color = colorVal != null ? Color(colorVal) : AppColors.primary;
 
     const icons = [
       Icons.sentiment_very_dissatisfied,
@@ -291,42 +293,41 @@ class _DayDetailPanel extends StatelessWidget {
       Icons.sentiment_very_satisfied,
     ];
 
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: color.withOpacity(0.08),
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: color.withOpacity(0.25)),
-      ),
-      child: Row(
-        children: [
-          Icon(icons[moodIndex.clamp(0, 4)], color: color, size: 36),
-          const SizedBox(width: 14),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text('Estado de ánimo',
-                  style: TextStyle(
-                      fontSize: 12, color: AppColors.textSecondary)),
-              const SizedBox(height: 2),
-              Text(moodLabel,
-                  style: TextStyle(
-                      fontSize: 17,
-                      fontWeight: FontWeight.w700,
-                      color: color)),
-            ],
-          ),
-          const Spacer(),
-          // Burbuja del color seleccionado
-          Container(
-            width: 24,
-            height: 24,
-            decoration: BoxDecoration(color: color, shape: BoxShape.circle),
-          ),
-        ],
-      ),
-    );
-  }
+      return Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration (
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: AppColors.divider),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(icons[moodIndex], color: color, size: 36),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text('Estado de ánimo', style: TextStyle(fontSize: 12, color: AppColors.textSecondary)),
+                      Text(moodLabel, style: TextStyle(fontSize: 17, fontWeight: FontWeight.w700, color: color)),
+                      if (baseEmotion != null && subEmotion != null) ...[
+                        const SizedBox(height: 8),
+                        Text('Emoción: $baseEmotion - $subEmotion',
+                            style: const TextStyle(fontSize: 13, color: AppColors.textSecondary)),
+                      ],
+                    ],
+                  ),
+                ),
+                Container(width: 24, height: 24, decoration: BoxDecoration(color: color, shape: BoxShape.circle)),
+              ],
+            ),
+          ],
+        ),
+      );
+    }
 
   Widget _medsCard(Map<String, dynamic> record) {
     final rawMeds = record['meds'] as List;

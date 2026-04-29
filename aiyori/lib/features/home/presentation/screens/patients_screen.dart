@@ -3,6 +3,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'patient_detail_screen.dart';
 import 'new_patient_screen.dart';
+import '../../../../core/services/user_service.dart';
 
 class PatientsScreen extends StatefulWidget {
   const PatientsScreen({super.key});
@@ -225,60 +226,75 @@ class _PatientsScreenState extends State<PatientsScreen> {
   }
 
   void _showLinkPatientDialog() {
-    final TextEditingController idController = TextEditingController();
-    final TextEditingController pinController = TextEditingController();
-
-    showDialog<void>(
-      context: context,
-      builder: (context) {
+  final TextEditingController pinController = TextEditingController();
+  showDialog(
+    context: context,
+    barrierDismissible: false, // Evita que se cierre tocando fuera
+    builder: (context) => StatefulBuilder(
+      builder: (context, setStateDialog) {
+        bool isLoading = false;
         return AlertDialog(
-          title: const Text('Vincular paciente'),
+          title: const Text('Link Patient by PIN'),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               TextField(
-                controller: idController,
-                decoration: const InputDecoration(
-                  labelText: 'ID del paciente (UID)',
-                ),
-              ),
-              const SizedBox(height: 8),
-              TextField(
                 controller: pinController,
-                decoration: const InputDecoration(
-                  labelText: 'PIN del paciente',
-                ),
-                obscureText: true,
+                decoration: const InputDecoration(labelText: 'Patient PIN (6 digits)'),
+                keyboardType: TextInputType.number,
+                maxLength: 6,
+                enabled: !isLoading,
+              ),
+              if (isLoading) const Padding(
+                padding: EdgeInsets.all(8.0),
+                child: CircularProgressIndicator(),
               ),
             ],
           ),
           actions: [
             TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: const Text('Cancelar'),
+              onPressed: isLoading ? null : () => Navigator.pop(context),
+              child: const Text('Cancel'),
             ),
             ElevatedButton(
-              onPressed: () async {
-                final idOrEmail = idController.text.trim();
-                final pin = pinController.text.trim();
-                if (idOrEmail.isEmpty || pin.isEmpty) {
-                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Completa los campos')));
-                  return;
-                }
-                if (idOrEmail.contains('@')) {
-                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Ingresa el UID del paciente, no el email')));
-                  return;
-                }
-                Navigator.of(context).pop();
-                await _linkPatient(idOrEmail, pin);
-              },
-              child: const Text('Vincular'),
+              onPressed: isLoading
+                  ? null
+                  : () async {
+                      final pin = pinController.text.trim();
+                      if (pin.length != 6) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('PIN must be 6 digits')),
+                        );
+                        return;
+                      }
+                      // Mostrar loading dentro del diálogo
+                      setStateDialog(() => isLoading = true);
+                      final userService = UserService();
+                      final success = await userService.linkProfessionalWithPin(
+                        pin,
+                        FirebaseAuth.instance.currentUser!.uid,
+                      );
+                      // Cerrar diálogo antes de mostrar resultado
+                      Navigator.pop(context);
+                      if (success) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('Patient linked successfully')),
+                        );
+                        // Refrescar lista de pacientes (el stream se actualiza solo)
+                      } else {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('Invalid or expired PIN')),
+                        );
+                      }
+                    },
+              child: const Text('Link'),
             ),
           ],
         );
       },
-    );
-  }
+    ),
+  );
+}
 
   Future<void> _linkPatient(String idOrEmail, String pin) async {
     final user = FirebaseAuth.instance.currentUser;

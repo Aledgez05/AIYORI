@@ -1,10 +1,6 @@
 import 'package:flutter/material.dart';
 import 'dart:math' as math;
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../../../core/theme/app_colors.dart';
-import '../../../../core/services/firebase_service.dart';
-import 'calendar_screen.dart';
 
 class EmotionFlowerScreen extends StatefulWidget {
   const EmotionFlowerScreen({super.key});
@@ -15,28 +11,16 @@ class EmotionFlowerScreen extends StatefulWidget {
 
 class _EmotionFlowerScreenState extends State<EmotionFlowerScreen>
     with SingleTickerProviderStateMixin {
-  
   late AnimationController _animationController;
   late Animation<double> _animation;
-  
+
   String? _selectedBaseEmotion;
   String? _selectedSubEmotion;
   List<String> _currentSubEmotions = [];
   bool _isExpanded = false;
-  bool _isSaving = false;
-  String? _moodStatus;
-  
-  static const Map<String, Map<String, dynamic>> _emotionToMood = {
-    'Joy': {'status': 'Very Good', 'level': 4},
-    'Trust': {'status': 'Good', 'level': 3},
-    'Anticipation': {'status': 'Neutral', 'level': 2},
-    'Surprise': {'status': 'Neutral', 'level': 2},
-    'Fear': {'status': 'Bad', 'level': 1},
-    'Sadness': {'status': 'Very Bad', 'level': 0},
-    'Disgust': {'status': 'Very Bad', 'level': 0},
-    'Anger': {'status': 'Bad', 'level': 1},
-  };
+  bool _hasSelected = false; // Nueva bandera
 
+  // 8 emociones base - EN INGLÉS
   static const List<Map<String, dynamic>> _baseEmotions = [
     {'name': 'Joy', 'color': Color(0xFFFFD700), 'angle': 0.0},
     {'name': 'Trust', 'color': Color(0xFF66BB6A), 'angle': 45.0},
@@ -48,6 +32,7 @@ class _EmotionFlowerScreenState extends State<EmotionFlowerScreen>
     {'name': 'Anticipation', 'color': Color(0xFFFFCA28), 'angle': 315.0},
   ];
 
+  // Sub-emociones - EN INGLÉS
   static const Map<String, List<Map<String, dynamic>>> _subEmotions = {
     'Joy': [
       {'name': 'Optimism', 'color': Color(0xFFFFE082)},
@@ -116,9 +101,12 @@ class _EmotionFlowerScreenState extends State<EmotionFlowerScreen>
         _isExpanded = false;
         _animationController.reverse();
         _currentSubEmotions = [];
+        _selectedSubEmotion = null;
+        _hasSelected = false;
       } else {
         _selectedBaseEmotion = emotion;
         _selectedSubEmotion = null;
+        _hasSelected = false;
         _currentSubEmotions = _subEmotions[emotion]!
             .map((e) => e['name'] as String)
             .toList();
@@ -129,177 +117,20 @@ class _EmotionFlowerScreenState extends State<EmotionFlowerScreen>
   }
 
   void _onSubEmotionTap(String subEmotion) {
-    print('Sub-emotion tapped: $subEmotion');
-    
     setState(() {
       _selectedSubEmotion = subEmotion;
-      if (_selectedBaseEmotion != null) {
-        final moodData = _emotionToMood[_selectedBaseEmotion!];
-        if (moodData != null) {
-          _moodStatus = moodData['status'] as String?;
-        }
-      }
+      _hasSelected = true;
     });
+    // NO cerrar la pantalla todavía; esperar confirmación.
   }
 
-  Future<bool> _checkDuplicateEntry() async {
-    try {
-      final uid = FirebaseAuth.instance.currentUser?.uid;
-      if (uid == null) throw Exception('User not authenticated');
-
-      final now = DateTime.now();
-      final startOfDay = DateTime(now.year, now.month, now.day);
-      final endOfDay = startOfDay.add(const Duration(days: 1));
-
-      final snapshot = await FirebaseFirestore.instance
-          .collection('users')
-          .doc(uid)
-          .collection('emotions')
-          .where('timestamp', isGreaterThanOrEqualTo: Timestamp.fromDate(startOfDay))
-          .where('timestamp', isLessThan: Timestamp.fromDate(endOfDay))
-          .limit(1)
-          .get();
-
-      return snapshot.docs.isEmpty;
-    } on FirebaseException catch (e) {
-      print('Firebase error checking duplicate: $e');
-      rethrow;
-    } catch (e) {
-      print('Error checking duplicate: $e');
-      rethrow;
+  void _confirmSelection() {
+    if (_selectedBaseEmotion != null && _selectedSubEmotion != null) {
+      Navigator.pop(context, {
+        'baseEmotion': _selectedBaseEmotion,
+        'subEmotion': _selectedSubEmotion,
+      });
     }
-  }
-
-  Future<void> _saveEmotion() async {
-    if (_selectedBaseEmotion == null || _selectedSubEmotion == null) {
-      _showErrorDialog('Please select an emotion first');
-      return;
-    }
-
-    setState(() => _isSaving = true);
-
-    try {
-      final uid = FirebaseAuth.instance.currentUser?.uid;
-      if (uid == null) {
-        if (mounted) _showErrorDialog('Please sign in to save your emotions.');
-        setState(() => _isSaving = false);
-        return;
-      }
-
-      final isDuplicate = await _checkDuplicateEntry();
-      if (!isDuplicate) {
-        if (mounted) {
-          _showErrorDialog(
-            'You have already recorded an emotion today. Please come back tomorrow.',
-            isError: true,
-          );
-        }
-        setState(() => _isSaving = false);
-        return;
-      }
-
-      final moodLevel = _emotionToMood[_selectedBaseEmotion!]?['level'] ?? 2;
-      final detectedMoodLabel = _emotionToMood[_selectedBaseEmotion!]?['status'] as String? ?? 'Neutral';
-      final detectedMoodLevel = moodLevel;
-
-      await FirebaseFirestore.instance
-          .collection('users')
-          .doc(uid)
-          .collection('emotions')
-          .add({
-            'baseEmotion': _selectedBaseEmotion,
-            'subEmotion': _selectedSubEmotion,
-            'detectedMoodLabel': detectedMoodLabel,
-            'detectedMoodLevel': detectedMoodLevel,
-            'moodLevel': moodLevel,
-            'timestamp': Timestamp.fromDate(DateTime.now()),
-        });
-
-      try {
-        final now = DateTime.now();
-        final localMidnight = DateTime(now.year, now.month, now.day);
-        final docId = FirebaseService().getDocIdForDate(localMidnight);
-
-        final moodLabel = _selectedSubEmotion ?? _selectedBaseEmotion;
-        Color? baseColor;
-        try {
-          baseColor = _baseEmotions
-              .firstWhere((e) => e['name'] == _selectedBaseEmotion)['color']
-              as Color?;
-        } catch (_) {
-          baseColor = null;
-        }
-        final moodColorVal =
-            (baseColor != null) ? baseColor.value : AppColors.primary.value;
-
-        await FirebaseService().saveDailyRecord(docId, {
-          'date': Timestamp.fromDate(localMidnight),
-          'moodIndex': moodLevel,
-          'moodLabel': moodLabel,
-          'moodColor': moodColorVal,
-          'baseEmotion': _selectedBaseEmotion,
-          'subEmotion': _selectedSubEmotion,
-          'detectedMoodLabel': detectedMoodLabel,
-          'detectedMoodLevel': detectedMoodLevel,
-        });
-      } catch (e) {
-        print('Error upserting daily record: $e');
-      }
-
-      if (mounted) {
-        _showErrorDialog(
-          'Emotion saved successfully!',
-          isError: false,
-        );
-        Future.delayed(const Duration(seconds: 1), () {
-          if (mounted) Navigator.pop(context);
-        });
-      }
-    } on FirebaseException catch (e) {
-      final msg = (e.code == 'permission-denied' || (e.message != null && e.message!.toLowerCase().contains('permission')))
-          ? 'You do not have permission to save. Check your connection or talk to the admin.'
-          : 'Error saving: ${e.message ?? e}';
-      if (mounted) _showErrorDialog(msg);
-    } catch (e) {
-      if (mounted) {
-        _showErrorDialog('Error saving: $e');
-      }
-    } finally {
-      if (mounted) {
-        setState(() => _isSaving = false);
-      }
-    }
-  }
-
-  void _showErrorDialog(String message, {bool isError = true}) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: Row(
-          children: [
-            Icon(
-              isError ? Icons.error_outline : Icons.check_circle_outline,
-              color: isError ? AppColors.error : AppColors.primary,
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Text(
-                  isError ? 'Error' : 'Success',
-                  style: const TextStyle(fontWeight: FontWeight.w600),
-                ),
-            ),
-          ],
-        ),
-        content: Text(message),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('OK'),
-          ),
-        ],
-      ),
-    );
   }
 
   @override
@@ -318,17 +149,6 @@ class _EmotionFlowerScreenState extends State<EmotionFlowerScreen>
           icon: const Icon(Icons.close, color: Color(0xFF4A4A4A)),
           onPressed: () => Navigator.pop(context),
         ),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.calendar_today_outlined, color: Color(0xFF4A4A4A)),
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => const CalendarScreen()),
-              );
-            },
-          ),
-        ],
       ),
       body: SafeArea(
         child: Column(
@@ -347,7 +167,7 @@ class _EmotionFlowerScreenState extends State<EmotionFlowerScreen>
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    _isExpanded 
+                    _isExpanded
                         ? 'Choose a variation of "$_selectedBaseEmotion"'
                         : 'Tap a petal to explore',
                     style: TextStyle(
@@ -358,7 +178,6 @@ class _EmotionFlowerScreenState extends State<EmotionFlowerScreen>
                 ],
               ),
             ),
-            
             Expanded(
               child: Center(
                 child: AnimatedBuilder(
@@ -371,142 +190,40 @@ class _EmotionFlowerScreenState extends State<EmotionFlowerScreen>
                           baseEmotions: _baseEmotions,
                           selectedBase: _selectedBaseEmotion,
                           selectedSub: _selectedSubEmotion,
-                          subEmotions: _selectedBaseEmotion != null 
+                          subEmotions: _selectedBaseEmotion != null
                               ? _subEmotions[_selectedBaseEmotion]!
                               : [],
                           expansionProgress: _animation.value,
                         ),
-                        size: const Size(400, 400),
+                        size: const Size(380, 380),
                       ),
                     );
                   },
                 ),
               ),
             ),
-            
-            if (_selectedSubEmotion != null)
+            // Botón de confirmación (visible solo si hay sub-emoción seleccionada)
+            if (_hasSelected && _selectedSubEmotion != null)
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 24),
-                child: Column(
-                  children: [
-                    Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(16),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withOpacity(0.05),
-                            blurRadius: 10,
-                            offset: const Offset(0, 2),
-                          ),
-                        ],
-                      ),
-                      child: Column(
-                        children: [
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              const Icon(
-                                Icons.check_circle,
-                                color: Color(0xFF6EC1C2),
-                                size: 24,
-                              ),
-                              const SizedBox(width: 12),
-                              Text(
-                                _selectedSubEmotion!,
-                                style: const TextStyle(
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.w600,
-                                  color: Color(0xFF4A4A4A),
-                                ),
-                              ),
-                            ],
-                          ),
-                          if (_moodStatus != null) ...[
-                            const SizedBox(height: 12),
-                            Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                              decoration: BoxDecoration(
-                                color: const Color(0xFF6EC1C2).withOpacity(0.1),
-                                borderRadius: BorderRadius.circular(20),
-                              ),
-                              child: Text(
-                                _moodStatus!,
-                                style: const TextStyle(
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w500,
-                                  color: Color(0xFF6EC1C2),
-                                ),
-                              ),
-                            ),
-                          ],
-                        ],
-                      ),
+                padding: const EdgeInsets.all(24),
+                child: ElevatedButton.icon(
+                  onPressed: _confirmSelection,
+                  icon: const Icon(Icons.check_circle),
+                  label: Text(
+                    'Confirm: $_selectedSubEmotion',
+                    style: const TextStyle(fontSize: 16),
+                  ),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.primary,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(30),
                     ),
-                    const SizedBox(height: 16),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: ElevatedButton.icon(
-                            onPressed: _isSaving ? null : _saveEmotion,
-                            icon: _isSaving
-                                ? SizedBox(
-                                    width: 20,
-                                    height: 20,
-                                    child: CircularProgressIndicator(
-                                      strokeWidth: 2,
-                                      valueColor: AlwaysStoppedAnimation<Color>(
-                                        Colors.white.withOpacity(0.8),
-                                      ),
-                                    ),
-                                  )
-                                : const Icon(Icons.save_rounded),
-                              label: Text(_isSaving ? 'Saving...' : 'Save'),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: AppColors.primary,
-                              foregroundColor: Colors.white,
-                              padding: const EdgeInsets.symmetric(vertical: 14),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        ElevatedButton.icon(
-                          onPressed: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(builder: (_) => const CalendarScreen()),
-                            );
-                          },
-                          icon: const Icon(Icons.calendar_month_rounded),
-                          label: const Text('Calendar'),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.white,
-                            foregroundColor: AppColors.primary,
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 16,
-                              vertical: 14,
-                            ),
-                            side: const BorderSide(
-                              color: AppColors.primary,
-                              width: 1.5,
-                            ),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
+                  ),
                 ),
               ),
-            
-            const SizedBox(height: 24),
+            const SizedBox(height: 8),
           ],
         ),
       ),
@@ -514,36 +231,35 @@ class _EmotionFlowerScreenState extends State<EmotionFlowerScreen>
   }
 
   void _handleTap(TapUpDetails details) {
-    final size = 400.0;
+    final size = 380.0;
     final center = Offset(size / 2, size / 2);
     final localPosition = details.localPosition;
-    
+
     final dx = localPosition.dx - center.dx;
     final dy = localPosition.dy - center.dy;
     final distance = math.sqrt(dx * dx + dy * dy);
-    
+
     double angle = math.atan2(dy, dx) * 180 / math.pi;
     if (angle < 0) angle += 360;
-    
-    print('=== TAP DETECTED ===');
-    print('Distance: $distance, Angle: $angle');
-    print('Is Expanded: $_isExpanded');
-    print('Selected Base: $_selectedBaseEmotion');
-    
-    if (distance < 50) {
-      print('Tapped center');
+
+    print('Tap - distance: $distance, angle: $angle');
+
+    if (distance < 45) {
+      // Centro: colapsar si está expandido
       if (_isExpanded) {
         setState(() {
           _isExpanded = false;
           _animationController.reverse();
           _currentSubEmotions = [];
+          _selectedSubEmotion = null;
+          _hasSelected = false;
         });
       }
     } else if (!_isExpanded) {
-      print('Tapped base petal');
+      // Pétalos base
       _findAndSelectBaseEmotion(angle);
     } else if (_isExpanded && _selectedBaseEmotion != null) {
-      print('Tapped sub-petal area');
+      // Sub-pétalos
       _findAndSelectSubEmotion(angle);
     }
   }
@@ -552,57 +268,44 @@ class _EmotionFlowerScreenState extends State<EmotionFlowerScreen>
     double adjustedAngle = (angle + 22.5) % 360;
     int index = (adjustedAngle / 45).floor();
     if (index >= 8) index = 0;
-    
-    print('Base emotion index: $index');
-    
+
     final emotion = _baseEmotions[index]['name'] as String;
     _onBaseEmotionTap(emotion);
   }
 
   void _findAndSelectSubEmotion(double angle) {
-    if (_currentSubEmotions.isEmpty) {
-      print('No sub-emotions available');
-      return;
-    }
-    
+    if (_currentSubEmotions.isEmpty) return;
+
     final baseData = _baseEmotions.firstWhere((e) => e['name'] == _selectedBaseEmotion);
     final baseAngle = baseData['angle'] as double;
-    
+
     double relativeAngle = angle - baseAngle;
-    
     while (relativeAngle > 180) {
       relativeAngle -= 360;
     }
     while (relativeAngle < -180) {
       relativeAngle += 360;
     }
-    
-    print('Base angle: $baseAngle');
+
     print('Relative angle: $relativeAngle');
-    
+
+    // Rango de detección más amplio: -50° a +50°
     if (relativeAngle >= -50 && relativeAngle <= 50) {
       int index;
-      if (relativeAngle < -20) {
+      if (relativeAngle < -16) {
         index = 0;
-      } else if (relativeAngle < 20) {
-        index = 1;
-      } else {
-        index = 2;
-      }
-      
-      print('Sub-emotion index: $index');
-      
+      } else if (relativeAngle < 16) index = 1;
+      else index = 2;
+
       if (index >= 0 && index < _currentSubEmotions.length) {
         final subEmotion = _currentSubEmotions[index];
-        print('Selected sub-emotion: $subEmotion');
         _onSubEmotionTap(subEmotion);
       }
-    } else {
-      print('Tap outside sub-petal arc (relative angle: $relativeAngle)');
     }
   }
 }
 
+// ─── Painter con pétalos orgánicos ────────────────────────────────────────────
 class _EmotionFlowerPainter extends CustomPainter {
   final List<Map<String, dynamic>> baseEmotions;
   final String? selectedBase;
@@ -622,16 +325,18 @@ class _EmotionFlowerPainter extends CustomPainter {
   void paint(Canvas canvas, Size size) {
     final center = Offset(size.width / 2, size.height / 2);
     final baseRadius = size.width * 0.30;
-    
+
+    // Fondo limpio
     final bgPaint = Paint()
       ..color = const Color(0xFFF5F0F0)
       ..style = PaintingStyle.fill;
     canvas.drawRect(Rect.fromLTWH(0, 0, size.width, size.height), bgPaint);
-    
+
+    // Dibujar pétalos base
     for (int i = 0; i < baseEmotions.length; i++) {
       final emotion = baseEmotions[i];
       final startAngle = (emotion['angle'] as double) * math.pi / 180;
-      
+
       _drawOrganicPetal(
         canvas: canvas,
         center: center,
@@ -640,48 +345,48 @@ class _EmotionFlowerPainter extends CustomPainter {
         color: emotion['color'] as Color,
         isSelected: selectedBase == emotion['name'],
         label: emotion['name'] as String,
-        isBasePetal: true,
       );
     }
-    
+
+    // Dibujar sub-pétalos
     if (expansionProgress > 0 && selectedBase != null) {
       final baseAngle = baseEmotions
           .firstWhere((e) => e['name'] == selectedBase)['angle'] as double;
-      
+
       final subRadius = baseRadius * 0.55;
-      final distanceFromCenter = baseRadius * 1.30;
-      
-      final angles = [-35.0, 0.0, 35.0];
-      
+      final distanceFromCenter = baseRadius * 1.35;
+      final angles = [-30.0, 0.0, 30.0];
+
       for (int i = 0; i < subEmotions.length && i < 3; i++) {
         final sub = subEmotions[i];
         final angleOffset = angles[i];
-        
-        final subAngle = (baseAngle + angleOffset) * math.pi / 180;
-        
-        final expandedDistance = distanceFromCenter * (0.85 + 0.35 * expansionProgress);
-        
+        final startAngle = (baseAngle + angleOffset) * math.pi / 180;
+
+        final expandedDistance = distanceFromCenter * (0.7 + 0.5 * expansionProgress);
+        final expandedRadius = subRadius * (0.5 + 0.6 * expansionProgress);
+
         final petalCenter = Offset(
-          center.dx + math.cos(subAngle) * expandedDistance,
-          center.dy + math.sin(subAngle) * expandedDistance,
+          center.dx + math.cos(baseAngle * math.pi / 180) * expandedDistance,
+          center.dy + math.sin(baseAngle * math.pi / 180) * expandedDistance,
         );
-        
-        final opacity = math.min(1.0, expansionProgress * 1.2);
-        
+
+        final opacity = math.min(1.0, expansionProgress * 1.3);
+
         _drawOrganicPetal(
           canvas: canvas,
           center: petalCenter,
-          radius: subRadius * expansionProgress,
-          startAngle: subAngle,
+          radius: expandedRadius,
+          startAngle: startAngle,
           color: (sub['color'] as Color).withOpacity(opacity),
           isSelected: selectedSub == sub['name'],
-          label: expansionProgress > 0.8 ? sub['name'] as String : null,
+          label: expansionProgress > 0.7 ? sub['name'] as String : null,
           isSubPetal: true,
         );
       }
     }
-    
-    _drawFlowerCenter(canvas, center, size.width * 0.12);
+
+    // Dibujar centro
+    _drawFlowerCenter(canvas, center, size.width * 0.11);
   }
 
   void _drawOrganicPetal({
@@ -693,46 +398,45 @@ class _EmotionFlowerPainter extends CustomPainter {
     bool isSelected = false,
     String? label,
     bool isSubPetal = false,
-    bool isBasePetal = false,
   }) {
     final path = Path();
-    final petalLength = radius * (isSubPetal ? 1.25 : 1.4);
-    
+    final petalLength = radius * (isSubPetal ? 1.15 : 1.35);
+
     final tipAngle = startAngle;
     final tipX = center.dx + math.cos(tipAngle) * petalLength;
     final tipY = center.dy + math.sin(tipAngle) * petalLength;
-    
+
     final ctrl1Angle = startAngle - 0.35;
     final ctrl1Dist = petalLength * 0.45;
     final ctrl1X = center.dx + math.cos(ctrl1Angle) * ctrl1Dist;
     final ctrl1Y = center.dy + math.sin(ctrl1Angle) * ctrl1Dist;
-    
+
     final ctrl2Angle = startAngle - 0.15;
     final ctrl2Dist = petalLength * 0.75;
     final ctrl2X = center.dx + math.cos(ctrl2Angle) * ctrl2Dist;
     final ctrl2Y = center.dy + math.sin(ctrl2Angle) * ctrl2Dist;
-    
+
     final ctrl3Angle = startAngle + 0.15;
     final ctrl3Dist = petalLength * 0.75;
     final ctrl3X = center.dx + math.cos(ctrl3Angle) * ctrl3Dist;
     final ctrl3Y = center.dy + math.sin(ctrl3Angle) * ctrl3Dist;
-    
+
     final ctrl4Angle = startAngle + 0.35;
     final ctrl4Dist = petalLength * 0.45;
     final ctrl4X = center.dx + math.cos(ctrl4Angle) * ctrl4Dist;
     final ctrl4Y = center.dy + math.sin(ctrl4Angle) * ctrl4Dist;
-    
+
     path.moveTo(center.dx, center.dy);
     path.cubicTo(ctrl1X, ctrl1Y, ctrl2X, ctrl2Y, tipX, tipY);
     path.cubicTo(ctrl3X, ctrl3Y, ctrl4X, ctrl4Y, center.dx, center.dy);
     path.close();
-    
+
     if (!isSubPetal || isSelected) {
       canvas.save();
       canvas.drawShadow(path, Colors.black.withOpacity(0.06), 4, false);
       canvas.restore();
     }
-    
+
     final gradient = RadialGradient(
       center: const Alignment(0, -0.2),
       colors: [
@@ -740,43 +444,43 @@ class _EmotionFlowerPainter extends CustomPainter {
         color.withOpacity(isSelected ? 0.6 : 0.35),
       ],
     );
-    
+
     final fillPaint = Paint()
       ..shader = gradient.createShader(Rect.fromCircle(
         center: center,
         radius: petalLength,
       ))
       ..style = PaintingStyle.fill;
-    
+
     canvas.drawPath(path, fillPaint);
-    
+
     final borderPaint = Paint()
       ..color = isSelected ? Colors.white.withOpacity(0.8) : color.withOpacity(0.3)
       ..style = PaintingStyle.stroke
       ..strokeWidth = isSelected ? 2.0 : 0.8;
-    
+
     canvas.drawPath(path, borderPaint);
-    
+
     if (!isSubPetal || isSelected) {
       final veinPaint = Paint()
         ..color = color.withOpacity(0.2)
         ..style = PaintingStyle.stroke
         ..strokeWidth = 0.6;
-      
+
       final midX = center.dx + math.cos(startAngle) * petalLength * 0.6;
       final midY = center.dy + math.sin(startAngle) * petalLength * 0.6;
-      
+
       canvas.drawLine(center, Offset(midX, midY), veinPaint);
     }
-    
+
     if (label != null) {
       _drawPetalLabel(
         canvas: canvas,
         text: label,
         center: center,
         angle: startAngle,
-        distance: petalLength * (isBasePetal ? 0.55 : 0.5),
-        color: const Color(0xFF2A2A2A),
+        distance: petalLength * 0.55,
+        color: const Color(0xFF3A3A3A),
         isSelected: isSelected,
         isSubPetal: isSubPetal,
       );
@@ -790,37 +494,31 @@ class _EmotionFlowerPainter extends CustomPainter {
       6,
       false,
     );
-    
+
     final gradient = RadialGradient(
-      colors: [
-        Colors.white,
-        const Color(0xFFFAF5F5),
-      ],
+      colors: [Colors.white, const Color(0xFFFAF5F5)],
     );
-    
+
     final centerPaint = Paint()
-      ..shader = gradient.createShader(Rect.fromCircle(
-        center: center,
-        radius: radius,
-      ))
+      ..shader = gradient.createShader(Rect.fromCircle(center: center, radius: radius))
       ..style = PaintingStyle.fill;
-    
+
     canvas.drawCircle(center, radius, centerPaint);
-    
+
     final borderPaint = Paint()
       ..color = const Color(0xFFD5CDCD)
       ..style = PaintingStyle.stroke
       ..strokeWidth = 1.5;
-    
+
     canvas.drawCircle(center, radius, borderPaint);
-    
+
     final innerPaint = Paint()
       ..color = const Color(0xFFEAE2E2)
       ..style = PaintingStyle.fill;
-    
+
     canvas.drawCircle(center, radius * 0.45, innerPaint);
-    
-    _drawCenterText(canvas, center, 'Tap a\npetal', radius * 0.65);
+
+    _drawCenterText(canvas, center, 'Tap a\npetal', radius * 0.6);
   }
 
   void _drawPetalLabel({
@@ -833,67 +531,32 @@ class _EmotionFlowerPainter extends CustomPainter {
     required bool isSelected,
     required bool isSubPetal,
   }) {
-    final fontSize = isSubPetal ? 11.0 : 12.0;
-    
-    // Format text for better display
-    String displayText = text;
-    if (text.length > 10) {
-      final midPoint = text.length ~/ 2;
-      displayText = '${text.substring(0, midPoint)}\n${text.substring(midPoint)}';
-    }
-    
+    final fontSize = isSubPetal ? 9.0 : 10.0;
+
     final textPainter = TextPainter(
       text: TextSpan(
-        text: displayText,
+        text: text,
         style: TextStyle(
           color: color,
           fontSize: fontSize,
           fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
-          letterSpacing: 0.3,
-          shadows: [
-            Shadow(
-              color: Colors.white.withOpacity(0.9),
-              blurRadius: 4,
-              offset: const Offset(1, 1),
-            ),
-          ],
         ),
       ),
       textDirection: TextDirection.ltr,
-      textAlign: TextAlign.center,
     );
-    
+
     textPainter.layout();
-    
-    // Adjust position to be more centered in the petal
-    final x = center.dx + math.cos(angle) * distance - textPainter.width / 2;
-    final y = center.dy + math.sin(angle) * distance - textPainter.height / 2;
-    
-    // Add subtle background for better readability
-    final bgRect = Rect.fromLTWH(
-      x - 3,
-      y - 2,
-      textPainter.width + 6,
-      textPainter.height + 4,
-    );
-    
-    final bgPaint = Paint()
-      ..color = Colors.white.withOpacity(isSelected ? 0.0 : 0.6)
-      ..style = PaintingStyle.fill;
-    
-    if (!isSelected) {
-      canvas.drawRRect(
-        RRect.fromRectAndRadius(bgRect, const Radius.circular(6)),
-        bgPaint,
-      );
-    }
-    
+
+    final textAngle = angle;
+    final x = center.dx + math.cos(textAngle) * distance - textPainter.width / 2;
+    final y = center.dy + math.sin(textAngle) * distance - textPainter.height / 2;
+
     textPainter.paint(canvas, Offset(x, y));
   }
 
   void _drawCenterText(Canvas canvas, Offset center, String text, double fontSize) {
     final lines = text.split('\n');
-    
+
     for (int i = 0; i < lines.length; i++) {
       final textPainter = TextPainter(
         text: TextSpan(
@@ -902,17 +565,16 @@ class _EmotionFlowerPainter extends CustomPainter {
             color: const Color(0xFF5A5A5A),
             fontSize: fontSize,
             fontWeight: FontWeight.w400,
-            letterSpacing: 0.2,
           ),
         ),
         textDirection: TextDirection.ltr,
       );
-      
+
       textPainter.layout();
-      
+
       final x = center.dx - textPainter.width / 2;
-      final y = center.dy - textPainter.height / 2 + (i - 0.5) * fontSize * 1.3;
-      
+      final y = center.dy - textPainter.height / 2 + (i - 0.5) * fontSize * 1.2;
+
       textPainter.paint(canvas, Offset(x, y));
     }
   }
@@ -920,7 +582,7 @@ class _EmotionFlowerPainter extends CustomPainter {
   @override
   bool shouldRepaint(covariant _EmotionFlowerPainter oldDelegate) {
     return oldDelegate.selectedBase != selectedBase ||
-           oldDelegate.selectedSub != selectedSub ||
-           oldDelegate.expansionProgress != expansionProgress;
+        oldDelegate.selectedSub != selectedSub ||
+        oldDelegate.expansionProgress != expansionProgress;
   }
 }
