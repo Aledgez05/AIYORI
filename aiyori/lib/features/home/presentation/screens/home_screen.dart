@@ -75,7 +75,6 @@ class _HomeScreenState extends State<HomeScreen>
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // ── Top bar ──────────────────────────
               Row(
                 children: [
                   Expanded(child: _headerCard()),
@@ -86,7 +85,6 @@ class _HomeScreenState extends State<HomeScreen>
 
               const SizedBox(height: 20),
 
-              // ── Responsive layout ─────────────────
               LayoutBuilder(
                 builder: (context, constraints) {
                   final isWide = constraints.maxWidth > 640;
@@ -267,19 +265,8 @@ class _HomeScreenState extends State<HomeScreen>
               Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  gradient: const LinearGradient(
-                    colors: [Color(0xFFE57373), Color(0xFFEF5350)],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ),
+                  color: const Color(0xFFEF5350),
                   borderRadius: BorderRadius.circular(20),
-                  boxShadow: [
-                    BoxShadow(
-                      color: const Color(0xFFEF5350).withOpacity(0.3),
-                      blurRadius: 12,
-                      offset: const Offset(0, 4),
-                    ),
-                  ],
                 ),
                 child: const Icon(
                   Icons.warning_rounded,
@@ -448,7 +435,7 @@ class _HomeScreenState extends State<HomeScreen>
   }
 
   // ────────────────────────────────────────────
-  // LEFT - 3 BOTONES + EMERGENCIA CENTRADO
+  // LEFT
   // ────────────────────────────────────────────
 
   Widget _leftColumn() {
@@ -527,78 +514,41 @@ class _HomeScreenState extends State<HomeScreen>
         child: Container(
           decoration: BoxDecoration(
             shape: BoxShape.circle,
-            gradient: const RadialGradient(
-              colors: [
-                Color(0xFFFF5252),
-                Color(0xFFD32F2F),
-              ],
-              stops: [0.3, 1.0],
+            color: const Color(0xFFE53935),
+            border: Border.all(
+              color: const Color(0xFFC62828),
+              width: 3,
             ),
             boxShadow: [
+              // Sombra inferior
               BoxShadow(
-                color: const Color(0xFFFF5252).withOpacity(0.5),
-                blurRadius: 25,
-                spreadRadius: 3,
-              ),
-              const BoxShadow(
-                color: Color(0xFFB71C1C),
+                color: const Color(0xFFB71C1C).withOpacity(0.6),
                 blurRadius: 0,
-                offset: Offset(0, 8),
+                offset: const Offset(0, 6),
+              ),
+              // Sombra difusa
+              BoxShadow(
+                color: const Color(0xFFEF5350).withOpacity(0.3),
+                blurRadius: 12,
+                offset: const Offset(0, 4),
               ),
             ],
-            border: Border.all(
-              color: Colors.white.withOpacity(0.3),
-              width: 4,
-            ),
           ),
-          child: Stack(
-            alignment: Alignment.center,
-            children: [
-              Positioned(
-                top: 8,
-                child: Container(
-                  width: 40,
-                  height: 16,
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(20),
-                    color: Colors.white.withOpacity(0.35),
-                  ),
+          child: const Center(
+            child: Padding(
+              padding: EdgeInsets.all(10),
+              child: Text(
+                'EMERGENCY\nBUTTON',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w800,
+                  fontSize: 11,
+                  height: 1.3,
+                  letterSpacing: 0.5,
                 ),
               ),
-              Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Icon(Icons.warning_rounded, color: Colors.white, size: 32),
-                  const SizedBox(height: 4),
-                  Text(
-                    'EMERGENCY',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.w900,
-                      fontSize: 8,
-                      letterSpacing: 1.5,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: const Text(
-                      'PRESS',
-                      style: TextStyle(
-                        color: Color(0xFFD32F2F),
-                        fontWeight: FontWeight.w900,
-                        fontSize: 8,
-                        letterSpacing: 1.5,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ],
+            ),
           ),
         ),
       ),
