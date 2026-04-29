@@ -15,8 +15,55 @@ class HomeScreen extends StatefulWidget {
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen> {
+class _HomeScreenState extends State<HomeScreen>
+    with SingleTickerProviderStateMixin {
   int _selectedIndex = 0;
+
+  late AnimationController _pressController;
+  late Animation<double> _pressAnimation;
+  bool _isPressed = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _pressController = AnimationController(
+      duration: const Duration(milliseconds: 200),
+      vsync: this,
+    );
+
+    _pressAnimation = Tween<double>(begin: 1.0, end: 0.85).animate(
+      CurvedAnimation(
+        parent: _pressController,
+        curve: Curves.easeInOut,
+      ),
+    );
+
+    _pressController.addStatusListener((status) {
+      if (status == AnimationStatus.completed && _isPressed) {
+        _pressController.reverse();
+        _isPressed = false;
+        _showEmergencyDialog();
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _pressController.dispose();
+    super.dispose();
+  }
+
+  void _onEmergencyTapDown(TapDownDetails details) {
+    _isPressed = true;
+    _pressController.forward();
+  }
+
+  void _onEmergencyTapUp(TapUpDetails details) {}
+
+  void _onEmergencyTapCancel() {
+    _isPressed = false;
+    _pressController.reverse();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -64,8 +111,8 @@ class _HomeScreenState extends State<HomeScreen> {
                   );
                 },
               ),
-              
-              const SizedBox(height: 80), // Espacio para el hotbar
+
+              const SizedBox(height: 80),
             ],
           ),
         ),
@@ -77,7 +124,7 @@ class _HomeScreenState extends State<HomeScreen> {
   // ────────────────────────────────────────────
   // BOTTOM NAVIGATION BAR
   // ────────────────────────────────────────────
-  
+
   Widget _buildBottomNavigationBar() {
     return Container(
       decoration: BoxDecoration(
@@ -133,7 +180,6 @@ class _HomeScreenState extends State<HomeScreen> {
   void _handleNavigation(int index) {
     switch (index) {
       case 0:
-        // Ya estamos en home
         break;
       case 1:
         Navigator.push(
@@ -194,7 +240,7 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   // ────────────────────────────────────────────
-  // EMERGENCY DIALOG - REDESIGNED
+  // EMERGENCY DIALOG
   // ────────────────────────────────────────────
 
   void _showEmergencyDialog() {
@@ -218,7 +264,6 @@ class _HomeScreenState extends State<HomeScreen> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              // Icono de emergencia
               Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
@@ -243,54 +288,36 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
               ),
               const SizedBox(height: 20),
-
-              // Título
               const Text(
                 '¿Necesitas ayuda inmediata?',
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   fontSize: 20,
                   fontWeight: FontWeight.w700,
-                  color: Color(0xFF1A1A1A),
-                  letterSpacing: -0.3,
+                  color: Colors.black,
                 ),
               ),
               const SizedBox(height: 12),
-
-              // Mensaje de apoyo
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                 decoration: BoxDecoration(
                   color: const Color(0xFFFFF3F0),
                   borderRadius: BorderRadius.circular(12),
-                  border: Border.all(
-                    color: const Color(0xFFFFCDD2).withOpacity(0.5),
-                  ),
                 ),
                 child: const Row(
                   children: [
-                    Icon(
-                      Icons.people_rounded,
-                      color: Color(0xFFEF5350),
-                      size: 20,
-                    ),
+                    Icon(Icons.people_rounded, color: Color(0xFFEF5350), size: 20),
                     SizedBox(width: 10),
                     Expanded(
                       child: Text(
                         'No estás solo. Hay personas dispuestas a escucharte.',
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: Color(0xFF424242),
-                          height: 1.4,
-                        ),
+                        style: TextStyle(fontSize: 14, color: Colors.black87),
                       ),
                     ),
                   ],
                 ),
               ),
               const SizedBox(height: 20),
-
-              // Contactos de emergencia
               _emergencyContactCard(
                 icon: Icons.phone_rounded,
                 label: 'Línea de Prevención del Suicidio',
@@ -305,40 +332,23 @@ class _HomeScreenState extends State<HomeScreen> {
                 color: const Color(0xFFEF5350),
               ),
               const SizedBox(height: 20),
-
-              // Notificación a familiares
               Container(
                 padding: const EdgeInsets.all(14),
                 decoration: BoxDecoration(
                   color: const Color(0xFFE8F5E9),
                   borderRadius: BorderRadius.circular(12),
-                  border: Border.all(
-                    color: const Color(0xFFC8E6C9),
-                  ),
                 ),
-                child: Row(
+                child: const Row(
                   children: [
-                    Container(
-                      padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF4CAF50).withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      child: const Icon(
-                        Icons.check_circle_rounded,
-                        color: Color(0xFF4CAF50),
-                        size: 22,
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    const Expanded(
+                    Icon(Icons.check_circle_rounded, color: Color(0xFF4CAF50), size: 22),
+                    SizedBox(width: 12),
+                    Expanded(
                       child: Text(
                         'Your family members have been notified',
                         style: TextStyle(
                           fontSize: 13,
                           fontWeight: FontWeight.w600,
-                          color: Color(0xFF2E7D32),
-                          height: 1.3,
+                          color: Color(0xFF1B5E20),
                         ),
                       ),
                     ),
@@ -346,11 +356,8 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
               ),
               const SizedBox(height: 24),
-
-              // Botones
               Row(
                 children: [
-                  // Botón Cerrar
                   Expanded(
                     child: OutlinedButton(
                       onPressed: () => Navigator.pop(context),
@@ -359,34 +366,22 @@ class _HomeScreenState extends State<HomeScreen> {
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(14),
                         ),
-                        side: const BorderSide(
-                          color: Color(0xFFE0E0E0),
-                        ),
                       ),
                       child: const Text(
                         'Cerrar',
-                        style: TextStyle(
-                          fontSize: 15,
-                          fontWeight: FontWeight.w600,
-                          color: Color(0xFF757575),
-                        ),
+                        style: TextStyle(color: Colors.black87, fontWeight: FontWeight.w600),
                       ),
                     ),
                   ),
                   const SizedBox(width: 12),
-                  // Botón Llamar ahora
                   Expanded(
                     flex: 2,
                     child: ElevatedButton(
-                      onPressed: () {
-                        Navigator.pop(context);
-                        // Aquí se implementaría la llamada
-                      },
+                      onPressed: () => Navigator.pop(context),
                       style: ElevatedButton.styleFrom(
                         padding: const EdgeInsets.symmetric(vertical: 14),
                         backgroundColor: const Color(0xFFEF5350),
                         foregroundColor: Colors.white,
-                        elevation: 0,
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(14),
                         ),
@@ -396,13 +391,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         children: [
                           Icon(Icons.phone_rounded, size: 20),
                           SizedBox(width: 8),
-                          Text(
-                            'Llamar ahora',
-                            style: TextStyle(
-                              fontSize: 15,
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
+                          Text('Llamar ahora', style: TextStyle(fontWeight: FontWeight.w700)),
                         ],
                       ),
                     ),
@@ -427,9 +416,6 @@ class _HomeScreenState extends State<HomeScreen> {
       decoration: BoxDecoration(
         color: const Color(0xFFFAFAFA),
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(
-          color: const Color(0xFFF0F0F0),
-        ),
       ),
       child: Row(
         children: [
@@ -445,11 +431,7 @@ class _HomeScreenState extends State<HomeScreen> {
           Expanded(
             child: Text(
               label,
-              style: const TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w500,
-                color: Color(0xFF424242),
-              ),
+              style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500, color: Colors.black87),
             ),
           ),
           Text(
@@ -458,7 +440,6 @@ class _HomeScreenState extends State<HomeScreen> {
               fontSize: 22,
               fontWeight: FontWeight.w800,
               color: color,
-              letterSpacing: 1.5,
             ),
           ),
         ],
@@ -467,7 +448,7 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   // ────────────────────────────────────────────
-  // LEFT
+  // LEFT - 3 BOTONES + EMERGENCIA CENTRADO
   // ────────────────────────────────────────────
 
   Widget _leftColumn() {
@@ -477,159 +458,148 @@ class _HomeScreenState extends State<HomeScreen> {
         _sectionLabel('Quick Actions'),
         const SizedBox(height: 10),
 
-        // Emergency button - full width, prominent
-        _emergencyActionCard(),
-        const SizedBox(height: 10),
+        GridView.count(
+          crossAxisCount: 3,
+          childAspectRatio: 1.0,
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          crossAxisSpacing: 12,
+          mainAxisSpacing: 12,
+          children: [
+            _featureCard(
+              icon: Icons.favorite_rounded,
+              label: 'Emotional\nCheck-in',
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => const EmotionFlowerScreen(),
+                  ),
+                );
+              },
+            ),
+            _featureCard(
+              icon: Icons.calendar_today_rounded,
+              label: 'Calendar',
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => const CalendarScreen(),
+                  ),
+                );
+              },
+            ),
 
-        // Grid of action cards
-        LayoutBuilder(
-          builder: (context, constraints) {
-            int count = constraints.maxWidth > 500 ? 3 : 2;
+            _featureCard(
+              icon: Icons.medication_rounded,
+              label: 'Meds',
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => const MedsTrackScreen(),
+                  ),
+                );
+              },
+            ),
 
-            return GridView.count(
-              crossAxisCount: count,
-              childAspectRatio: 1.3,
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              crossAxisSpacing: 10,
-              mainAxisSpacing: 10,
-              children: [
-                _featureCard(
-                  icon: Icons.favorite_rounded,
-                  label: 'Today\'s Emotional Check-in',
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => const EmotionFlowerScreen(),
-                      ),
-                    );
-                  },
-                ),
-                _featureCard(
-                  icon: Icons.calendar_today_rounded,
-                  label: 'My calendar',
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => const CalendarScreen(),
-                      ),
-                    );
-                  },
-                ),
-                _featureCard(
-                  icon: Icons.medication_rounded,
-                  label: 'Today\'s Meds',
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => const MedsTrackScreen(),
-                      ),
-                    );
-                  },
-                ),
-              ],
-            );
-          },
+            _emergencyArcadeButton(),
+          ],
         ),
       ],
     );
   }
 
-  Widget _emergencyActionCard() {
+  Widget _emergencyArcadeButton() {
     return GestureDetector(
-      onTap: () {
-        _showEmergencyDialog();
-      },
-      child: Container(
-        width: double.infinity,
-        padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 20),
-        decoration: BoxDecoration(
-          gradient: const LinearGradient(
-            colors: [Color(0xFFE57373), Color(0xFFEF5350)],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
-          borderRadius: BorderRadius.circular(16),
-          boxShadow: [
-            BoxShadow(
-              color: const Color(0xFFEF5350).withOpacity(0.4),
-              blurRadius: 16,
-              offset: const Offset(0, 6),
-            ),
-          ],
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            // Warning icon
-            Container(
-              padding: const EdgeInsets.all(10),
-              decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.2),
-                borderRadius: BorderRadius.circular(14),
-              ),
-              child: const Icon(
-                Icons.warning_rounded,
-                color: Colors.white,
-                size: 28,
-              ),
-            ),
-            const SizedBox(width: 16),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  'EMERGENCIA',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.w800,
-                    fontSize: 18,
-                    letterSpacing: 2,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  'Ayuda inmediata 24/7',
-                  style: TextStyle(
-                    color: Colors.white.withOpacity(0.9),
-                    fontSize: 13,
-                    fontWeight: FontWeight.w400,
-                  ),
-                ),
+      onTapDown: _onEmergencyTapDown,
+      onTapUp: _onEmergencyTapUp,
+      onTapCancel: _onEmergencyTapCancel,
+      child: AnimatedBuilder(
+        animation: _pressAnimation,
+        builder: (context, child) {
+          return Transform.scale(
+            scale: _pressAnimation.value,
+            child: child,
+          );
+        },
+        child: Container(
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            gradient: const RadialGradient(
+              colors: [
+                Color(0xFFFF5252),
+                Color(0xFFD32F2F),
               ],
+              stops: [0.3, 1.0],
             ),
-            const Spacer(),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-              decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.25),
-                borderRadius: BorderRadius.circular(20),
+            boxShadow: [
+              BoxShadow(
+                color: const Color(0xFFFF5252).withOpacity(0.5),
+                blurRadius: 25,
+                spreadRadius: 3,
               ),
-              child: const Row(
-                mainAxisSize: MainAxisSize.min,
+              const BoxShadow(
+                color: Color(0xFFB71C1C),
+                blurRadius: 0,
+                offset: Offset(0, 8),
+              ),
+            ],
+            border: Border.all(
+              color: Colors.white.withOpacity(0.3),
+              width: 4,
+            ),
+          ),
+          child: Stack(
+            alignment: Alignment.center,
+            children: [
+              Positioned(
+                top: 8,
+                child: Container(
+                  width: 40,
+                  height: 16,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(20),
+                    color: Colors.white.withOpacity(0.35),
+                  ),
+                ),
+              ),
+              Column(
+                mainAxisAlignment: MainAxisAlignment.center,
                 children: [
+                  const Icon(Icons.warning_rounded, color: Colors.white, size: 32),
+                  const SizedBox(height: 4),
                   Text(
-                    'TOCAR',
+                    'EMERGENCY',
                     style: TextStyle(
                       color: Colors.white,
-                      fontWeight: FontWeight.w700,
-                      fontSize: 13,
+                      fontWeight: FontWeight.w900,
+                      fontSize: 8,
                       letterSpacing: 1.5,
                     ),
                   ),
-                  SizedBox(width: 6),
-                  Icon(
-                    Icons.arrow_forward_rounded,
-                    color: Colors.white,
-                    size: 18,
+                  const SizedBox(height: 4),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: const Text(
+                      'PRESS',
+                      style: TextStyle(
+                        color: Color(0xFFD32F2F),
+                        fontWeight: FontWeight.w900,
+                        fontSize: 8,
+                        letterSpacing: 1.5,
+                      ),
+                    ),
                   ),
                 ],
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -683,7 +653,7 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   // ────────────────────────────────────────────
-  // WELLNESS TOOLS SECTION
+  // WELLNESS TOOLS
   // ────────────────────────────────────────────
 
   Widget _wellnessToolsCard() {
@@ -720,8 +690,6 @@ class _HomeScreenState extends State<HomeScreen> {
             ],
           ),
           const SizedBox(height: 16),
-          
-          // 4-5-4 Breathing
           _wellnessToolItem(
             icon: Icons.air_rounded,
             title: '4-5-4 Breathing',
@@ -729,10 +697,7 @@ class _HomeScreenState extends State<HomeScreen> {
             color: const Color(0xFF4CAF50),
             onTap: () => _showExercise(const BreathingExerciseScreen()),
           ),
-          
           const Divider(height: 16, color: AppColors.divider),
-          
-          // 5-4-3-2-1 Grounding
           _wellnessToolItem(
             icon: Icons.psychology_rounded,
             title: '5-4-3-2-1 Grounding',
@@ -740,10 +705,7 @@ class _HomeScreenState extends State<HomeScreen> {
             color: const Color(0xFF42A5F5),
             onTap: () => _showExercise(const GroundingExerciseScreen()),
           ),
-          
           const Divider(height: 16, color: AppColors.divider),
-          
-          // Guided Mini-Conversation
           _wellnessToolItem(
             icon: Icons.chat_bubble_rounded,
             title: 'Mindful Check-in',
@@ -804,13 +766,20 @@ class _HomeScreenState extends State<HomeScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(title, style: TextStyle(fontWeight: FontWeight.w600, fontSize: 15, color: AppColors.textPrimary)),
+                  Text(title,
+                      style: TextStyle(
+                          fontWeight: FontWeight.w600,
+                          fontSize: 15,
+                          color: AppColors.textPrimary)),
                   const SizedBox(height: 2),
-                  Text(subtitle, style: TextStyle(fontSize: 12, color: AppColors.textSecondary)),
+                  Text(subtitle,
+                      style: TextStyle(
+                          fontSize: 12, color: AppColors.textSecondary)),
                 ],
               ),
             ),
-            Icon(Icons.arrow_forward_ios_rounded, size: 14, color: AppColors.textSecondary.withOpacity(0.5)),
+            Icon(Icons.arrow_forward_ios_rounded,
+                size: 14, color: AppColors.textSecondary.withOpacity(0.5)),
           ],
         ),
       ),
@@ -892,20 +861,22 @@ class _HomeScreenState extends State<HomeScreen> {
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Container(
-            padding: const EdgeInsets.all(10),
+            padding: const EdgeInsets.all(18),
             decoration: BoxDecoration(
               color: AppColors.primary.withOpacity(0.08),
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(16),
             ),
-            child: Icon(icon, size: 22, color: AppColors.primary),
+            child: Icon(icon, size: 34, color: AppColors.primary),
           ),
-          const SizedBox(height: 10),
+          const SizedBox(height: 12),
           Text(
             label,
+            textAlign: TextAlign.center,
             style: TextStyle(
               color: AppColors.textPrimary,
-              fontWeight: FontWeight.w500,
+              fontWeight: FontWeight.w600,
               fontSize: 13,
+              height: 1.2,
             ),
           ),
         ],
@@ -939,7 +910,8 @@ class _HomeScreenState extends State<HomeScreen> {
           borderRadius: BorderRadius.circular(12),
           border: Border.all(color: AppColors.divider),
         ),
-        child: const Icon(Icons.more_vert, size: 20, color: AppColors.textPrimary),
+        child:
+            const Icon(Icons.more_vert, size: 20, color: AppColors.textPrimary),
       ),
     );
   }
@@ -960,9 +932,7 @@ class _HomeScreenState extends State<HomeScreen> {
               Navigator.pop(context);
               await FirebaseAuth.instance.signOut();
             },
-            style: TextButton.styleFrom(
-              foregroundColor: Colors.red,
-            ),
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
             child: const Text('Sign Out'),
           ),
         ],
