@@ -32,8 +32,6 @@ class _HomeScreenState extends State<HomeScreen> {
               Row(
                 children: [
                   Expanded(child: _headerCard()),
-                  const SizedBox(width: 16),
-                  _emergenciaButton(),
                   const SizedBox(width: 12),
                   _buildMenuButton(),
                 ],
@@ -195,144 +193,272 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _emergenciaButton() {
-    return GestureDetector(
-      onTap: () {
-        _showEmergencyDialog();
-      },
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-        decoration: BoxDecoration(
-          gradient: const LinearGradient(
-            colors: [Color(0xFFE57373), Color(0xFFEF5350)],
-          ),
-          borderRadius: BorderRadius.circular(14),
-          boxShadow: [
-            BoxShadow(
-              color: AppColors.error.withOpacity(0.3),
-              blurRadius: 12,
-              offset: const Offset(0, 4),
-            ),
-          ],
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: const [
-            Icon(Icons.warning_rounded, color: Colors.white, size: 18),
-            SizedBox(width: 6),
-            Text(
-              'EMERGENCIA',
-              style: TextStyle(
-                color: Colors.white,
-                fontWeight: FontWeight.w700,
-                fontSize: 13,
-                letterSpacing: 1.2,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
+  // ────────────────────────────────────────────
+  // EMERGENCY DIALOG - REDESIGNED
+  // ────────────────────────────────────────────
 
   void _showEmergencyDialog() {
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(20),
-        ),
-        title: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: AppColors.error.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(12),
+      builder: (context) => Dialog(
+        backgroundColor: Colors.transparent,
+        child: Container(
+          padding: const EdgeInsets.all(24),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(24),
+            boxShadow: [
+              BoxShadow(
+                color: const Color(0xFFEF5350).withOpacity(0.15),
+                blurRadius: 30,
+                offset: const Offset(0, 10),
               ),
-              child: const Icon(
-                Icons.warning_rounded,
-                color: AppColors.error,
-                size: 24,
-              ),
-            ),
-            const SizedBox(width: 12),
-            const Text(
-              '¿Necesitas ayuda inmediata?',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ],
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'No estás solo. Hay personas dispuestas a escucharte.',
-              style: TextStyle(fontSize: 14),
-            ),
-            const SizedBox(height: 16),
-            _emergencyContact(
-              'Línea de Prevención del Suicidio',
-              '988',
-            ),
-            const SizedBox(height: 8),
-            _emergencyContact(
-              'Emergencias',
-              '911',
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text(
-              'Cerrar',
-              style: TextStyle(color: AppColors.textSecondary),
-            ),
+            ],
           ),
-          ElevatedButton(
-            onPressed: () {
-              // Llamar al 911
-              Navigator.pop(context);
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.error,
-              foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Icono de emergencia
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
+                    colors: [Color(0xFFE57373), Color(0xFFEF5350)],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                  borderRadius: BorderRadius.circular(20),
+                  boxShadow: [
+                    BoxShadow(
+                      color: const Color(0xFFEF5350).withOpacity(0.3),
+                      blurRadius: 12,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: const Icon(
+                  Icons.warning_rounded,
+                  color: Colors.white,
+                  size: 36,
+                ),
               ),
-            ),
-            child: const Text('Llamar ahora'),
+              const SizedBox(height: 20),
+
+              // Título
+              const Text(
+                '¿Necesitas ayuda inmediata?',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.w700,
+                  color: Color(0xFF1A1A1A),
+                  letterSpacing: -0.3,
+                ),
+              ),
+              const SizedBox(height: 12),
+
+              // Mensaje de apoyo
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFFFF3F0),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: const Color(0xFFFFCDD2).withOpacity(0.5),
+                  ),
+                ),
+                child: const Row(
+                  children: [
+                    Icon(
+                      Icons.people_rounded,
+                      color: Color(0xFFEF5350),
+                      size: 20,
+                    ),
+                    SizedBox(width: 10),
+                    Expanded(
+                      child: Text(
+                        'No estás solo. Hay personas dispuestas a escucharte.',
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: Color(0xFF424242),
+                          height: 1.4,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 20),
+
+              // Contactos de emergencia
+              _emergencyContactCard(
+                icon: Icons.phone_rounded,
+                label: 'Línea de Prevención del Suicidio',
+                number: '988',
+                color: const Color(0xFF5C6BC0),
+              ),
+              const SizedBox(height: 12),
+              _emergencyContactCard(
+                icon: Icons.local_hospital_rounded,
+                label: 'Emergencias',
+                number: '911',
+                color: const Color(0xFFEF5350),
+              ),
+              const SizedBox(height: 20),
+
+              // Notificación a familiares
+              Container(
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFE8F5E9),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: const Color(0xFFC8E6C9),
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF4CAF50).withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: const Icon(
+                        Icons.check_circle_rounded,
+                        color: Color(0xFF4CAF50),
+                        size: 22,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    const Expanded(
+                      child: Text(
+                        'Your family members have been notified',
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                          color: Color(0xFF2E7D32),
+                          height: 1.3,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 24),
+
+              // Botones
+              Row(
+                children: [
+                  // Botón Cerrar
+                  Expanded(
+                    child: OutlinedButton(
+                      onPressed: () => Navigator.pop(context),
+                      style: OutlinedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(14),
+                        ),
+                        side: const BorderSide(
+                          color: Color(0xFFE0E0E0),
+                        ),
+                      ),
+                      child: const Text(
+                        'Cerrar',
+                        style: TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w600,
+                          color: Color(0xFF757575),
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  // Botón Llamar ahora
+                  Expanded(
+                    flex: 2,
+                    child: ElevatedButton(
+                      onPressed: () {
+                        Navigator.pop(context);
+                        // Aquí se implementaría la llamada
+                      },
+                      style: ElevatedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        backgroundColor: const Color(0xFFEF5350),
+                        foregroundColor: Colors.white,
+                        elevation: 0,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(14),
+                        ),
+                      ),
+                      child: const Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(Icons.phone_rounded, size: 20),
+                          SizedBox(width: 8),
+                          Text(
+                            'Llamar ahora',
+                            style: TextStyle(
+                              fontSize: 15,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }
 
-  Widget _emergencyContact(String label, String number) {
+  Widget _emergencyContactCard({
+    required IconData icon,
+    required String label,
+    required String number,
+    required Color color,
+  }) {
     return Container(
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(12),
+        color: const Color(0xFFFAFAFA),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(
+          color: const Color(0xFFF0F0F0),
+        ),
       ),
       child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(
-            label,
-            style: const TextStyle(fontWeight: FontWeight.w500),
+          Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: color.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Icon(icon, color: color, size: 22),
+          ),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Text(
+              label,
+              style: const TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
+                color: Color(0xFF424242),
+              ),
+            ),
           ),
           Text(
             number,
             style: TextStyle(
-              fontWeight: FontWeight.bold,
-              color: AppColors.primary,
-              fontSize: 18,
+              fontSize: 22,
+              fontWeight: FontWeight.w800,
+              color: color,
+              letterSpacing: 1.5,
             ),
           ),
         ],
@@ -351,6 +477,11 @@ class _HomeScreenState extends State<HomeScreen> {
         _sectionLabel('Quick Actions'),
         const SizedBox(height: 10),
 
+        // Emergency button - full width, prominent
+        _emergencyActionCard(),
+        const SizedBox(height: 10),
+
+        // Grid of action cards
         LayoutBuilder(
           builder: (context, constraints) {
             int count = constraints.maxWidth > 500 ? 3 : 2;
@@ -399,13 +530,6 @@ class _HomeScreenState extends State<HomeScreen> {
                     );
                   },
                 ),
-                _featureCard(
-                  icon: Icons.notifications_rounded,
-                  label: 'Reminders',
-                  onTap: () {
-                    // Navegar a recordatorios
-                  },
-                ),
               ],
             );
           },
@@ -414,19 +538,116 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
+  Widget _emergencyActionCard() {
+    return GestureDetector(
+      onTap: () {
+        _showEmergencyDialog();
+      },
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 20),
+        decoration: BoxDecoration(
+          gradient: const LinearGradient(
+            colors: [Color(0xFFE57373), Color(0xFFEF5350)],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: const Color(0xFFEF5350).withOpacity(0.4),
+              blurRadius: 16,
+              offset: const Offset(0, 6),
+            ),
+          ],
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            // Warning icon
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.2),
+                borderRadius: BorderRadius.circular(14),
+              ),
+              child: const Icon(
+                Icons.warning_rounded,
+                color: Colors.white,
+                size: 28,
+              ),
+            ),
+            const SizedBox(width: 16),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'EMERGENCIA',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w800,
+                    fontSize: 18,
+                    letterSpacing: 2,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'Ayuda inmediata 24/7',
+                  style: TextStyle(
+                    color: Colors.white.withOpacity(0.9),
+                    fontSize: 13,
+                    fontWeight: FontWeight.w400,
+                  ),
+                ),
+              ],
+            ),
+            const Spacer(),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.25),
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: const Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    'TOCAR',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w700,
+                      fontSize: 13,
+                      letterSpacing: 1.5,
+                    ),
+                  ),
+                  SizedBox(width: 6),
+                  Icon(
+                    Icons.arrow_forward_rounded,
+                    color: Colors.white,
+                    size: 18,
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   // ────────────────────────────────────────────
   // RIGHT
   // ────────────────────────────────────────────
 
- Widget _rightColumn() {
-  return Column(
-    children: [
-      _pinCard(),
-      const SizedBox(height: 14),
-      _wellnessToolsCard(),  // ← ESTE ES EL NUEVO WIDGET
-    ],
-  );
-}
+  Widget _rightColumn() {
+    return Column(
+      children: [
+        _pinCard(),
+        const SizedBox(height: 14),
+        _wellnessToolsCard(),
+      ],
+    );
+  }
 
   Widget _pinCard() {
     return _card(
@@ -461,140 +682,140 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-// ────────────────────────────────────────────
-// WELLNESS TOOLS SECTION
-// ────────────────────────────────────────────
+  // ────────────────────────────────────────────
+  // WELLNESS TOOLS SECTION
+  // ────────────────────────────────────────────
 
-Widget _wellnessToolsCard() {
-  return _card(
-    child: Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text(
-              'Wellness Tools',
-              style: TextStyle(
-                fontWeight: FontWeight.w700,
-                fontSize: 16,
-                color: AppColors.textPrimary,
-              ),
-            ),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-              decoration: BoxDecoration(
-                color: AppColors.primary.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Text(
-                'Self-care',
+  Widget _wellnessToolsCard() {
+    return _card(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'Wellness Tools',
                 style: TextStyle(
-                  fontSize: 10,
-                  fontWeight: FontWeight.w600,
-                  color: AppColors.primary,
+                  fontWeight: FontWeight.w700,
+                  fontSize: 16,
+                  color: AppColors.textPrimary,
                 ),
               ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 16),
-        
-        // 4-5-4 Breathing
-        _wellnessToolItem(
-          icon: Icons.air_rounded,
-          title: '4-5-4 Breathing',
-          subtitle: 'Calm your nervous system',
-          color: const Color(0xFF4CAF50),
-          onTap: () => _showExercise(const BreathingExerciseScreen()),
-        ),
-        
-        const Divider(height: 16, color: AppColors.divider),
-        
-        // 5-4-3-2-1 Grounding
-        _wellnessToolItem(
-          icon: Icons.psychology_rounded,
-          title: '5-4-3-2-1 Grounding',
-          subtitle: 'Sensory distraction for anxiety',
-          color: const Color(0xFF42A5F5),
-          onTap: () => _showExercise(const GroundingExerciseScreen()),
-        ),
-        
-        const Divider(height: 16, color: AppColors.divider),
-        
-        // Guided Mini-Conversation
-        _wellnessToolItem(
-          icon: Icons.chat_bubble_rounded,
-          title: 'Mindful Check-in',
-          subtitle: 'Guided reflection (2-5 min)',
-          color: const Color(0xFFFF9800),
-          onTap: () => _showExercise(const GuidedConversationScreen()),
-        ),
-      ],
-    ),
-  );
-}
-
-void _showExercise(Widget screen) {
-  showModalBottomSheet(
-    context: context,
-    isScrollControlled: true,
-    backgroundColor: Colors.transparent,
-    builder: (context) => DraggableScrollableSheet(
-      initialChildSize: 0.75,
-      minChildSize: 0.5,
-      maxChildSize: 0.88,
-      builder: (_, controller) => Container(
-        decoration: const BoxDecoration(
-          color: AppColors.surface,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-        ),
-        child: screen,
-      ),
-    ),
-  );
-}
-
-Widget _wellnessToolItem({
-  required IconData icon,
-  required String title,
-  required String subtitle,
-  required Color color,
-  required VoidCallback onTap,
-}) {
-  return InkWell(
-    onTap: onTap,
-    borderRadius: BorderRadius.circular(12),
-    child: Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8),
-      child: Row(
-        children: [
-          Container(
-            width: 48,
-            height: 48,
-            decoration: BoxDecoration(
-              color: color.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Icon(icon, color: color, size: 24),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: AppColors.primary.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Text(
+                  'Self-care',
+                  style: TextStyle(
+                    fontSize: 10,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.primary,
+                  ),
+                ),
+              ),
+            ],
           ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(title, style: TextStyle(fontWeight: FontWeight.w600, fontSize: 15, color: AppColors.textPrimary)),
-                const SizedBox(height: 2),
-                Text(subtitle, style: TextStyle(fontSize: 12, color: AppColors.textSecondary)),
-              ],
-            ),
+          const SizedBox(height: 16),
+          
+          // 4-5-4 Breathing
+          _wellnessToolItem(
+            icon: Icons.air_rounded,
+            title: '4-5-4 Breathing',
+            subtitle: 'Calm your nervous system',
+            color: const Color(0xFF4CAF50),
+            onTap: () => _showExercise(const BreathingExerciseScreen()),
           ),
-          Icon(Icons.arrow_forward_ios_rounded, size: 14, color: AppColors.textSecondary.withOpacity(0.5)),
+          
+          const Divider(height: 16, color: AppColors.divider),
+          
+          // 5-4-3-2-1 Grounding
+          _wellnessToolItem(
+            icon: Icons.psychology_rounded,
+            title: '5-4-3-2-1 Grounding',
+            subtitle: 'Sensory distraction for anxiety',
+            color: const Color(0xFF42A5F5),
+            onTap: () => _showExercise(const GroundingExerciseScreen()),
+          ),
+          
+          const Divider(height: 16, color: AppColors.divider),
+          
+          // Guided Mini-Conversation
+          _wellnessToolItem(
+            icon: Icons.chat_bubble_rounded,
+            title: 'Mindful Check-in',
+            subtitle: 'Guided reflection (2-5 min)',
+            color: const Color(0xFFFF9800),
+            onTap: () => _showExercise(const GuidedConversationScreen()),
+          ),
         ],
       ),
-    ),
-  );
-}
+    );
+  }
+
+  void _showExercise(Widget screen) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => DraggableScrollableSheet(
+        initialChildSize: 0.75,
+        minChildSize: 0.5,
+        maxChildSize: 0.88,
+        builder: (_, controller) => Container(
+          decoration: const BoxDecoration(
+            color: AppColors.surface,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+          ),
+          child: screen,
+        ),
+      ),
+    );
+  }
+
+  Widget _wellnessToolItem({
+    required IconData icon,
+    required String title,
+    required String subtitle,
+    required Color color,
+    required VoidCallback onTap,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(12),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 8),
+        child: Row(
+          children: [
+            Container(
+              width: 48,
+              height: 48,
+              decoration: BoxDecoration(
+                color: color.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Icon(icon, color: color, size: 24),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(title, style: TextStyle(fontWeight: FontWeight.w600, fontSize: 15, color: AppColors.textPrimary)),
+                  const SizedBox(height: 2),
+                  Text(subtitle, style: TextStyle(fontSize: 12, color: AppColors.textSecondary)),
+                ],
+              ),
+            ),
+            Icon(Icons.arrow_forward_ios_rounded, size: 14, color: AppColors.textSecondary.withOpacity(0.5)),
+          ],
+        ),
+      ),
+    );
+  }
 
   // ────────────────────────────────────────────
   // UI BASE
@@ -692,61 +913,6 @@ Widget _wellnessToolItem({
     );
   }
 
-  Widget _activityCard(String title, String duration, IconData icon) {
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(icon, size: 20, color: AppColors.primary),
-          const SizedBox(height: 6),
-          Text(
-            title,
-            style: TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.w500,
-              color: AppColors.textPrimary,
-            ),
-          ),
-          Text(
-            duration,
-            style: TextStyle(
-              fontSize: 11,
-              color: AppColors.textSecondary,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _breathStep(String number, String label) {
-    return Column(
-      children: [
-        Text(
-          number,
-          style: TextStyle(
-            fontSize: 22,
-            fontWeight: FontWeight.bold,
-            color: AppColors.primary,
-          ),
-        ),
-        const SizedBox(height: 2),
-        Text(
-          label,
-          style: TextStyle(
-            fontSize: 11,
-            color: AppColors.textSecondary,
-          ),
-        ),
-      ],
-    );
-  }
-
   Widget _buildMenuButton() {
     return PopupMenuButton<String>(
       onSelected: (value) async {
@@ -800,19 +966,6 @@ Widget _wellnessToolItem({
             child: const Text('Sign Out'),
           ),
         ],
-      ),
-    );
-  }
-
-  Widget _stepSep() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 6),
-      child: Text(
-        '·',
-        style: TextStyle(
-          fontSize: 20,
-          color: AppColors.textSecondary.withOpacity(0.5),
-        ),
       ),
     );
   }
