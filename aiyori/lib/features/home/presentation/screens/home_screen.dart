@@ -7,6 +7,7 @@ import 'calendar_screen.dart';
 import 'checkin_screen.dart';
 import 'patient_profile_screen.dart';
 import 'wellness_tools_screen.dart';
+import 'inspiration_board.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -23,28 +24,19 @@ class _HomeScreenState extends State<HomeScreen>
   late Animation<double> _pressAnimation;
   bool _isPressed = false;
 
-  @override
+    @override
   void initState() {
     super.initState();
     _pressController = AnimationController(
-      duration: const Duration(milliseconds: 200),
+      duration: const Duration(milliseconds: 120),
       vsync: this,
     );
-
     _pressAnimation = Tween<double>(begin: 1.0, end: 0.85).animate(
       CurvedAnimation(
         parent: _pressController,
         curve: Curves.easeInOut,
       ),
     );
-
-    _pressController.addStatusListener((status) {
-      if (status == AnimationStatus.completed && _isPressed) {
-        _pressController.reverse();
-        _isPressed = false;
-        _showEmergencyDialog();
-      }
-    });
   }
 
   @override
@@ -54,16 +46,21 @@ class _HomeScreenState extends State<HomeScreen>
   }
 
   void _onEmergencyTapDown(TapDownDetails details) {
-    _isPressed = true;
     _pressController.forward();
+    setState(() => _isPressed = true);
   }
 
-  void _onEmergencyTapUp(TapUpDetails details) {}
+  void _onEmergencyTapUp(TapUpDetails details) {
+    _pressController.reverse();
+    setState(() => _isPressed = false);
+    _showEmergencyDialog();
+  }
 
   void _onEmergencyTapCancel() {
-    _isPressed = false;
     _pressController.reverse();
+    setState(() => _isPressed = false);
   }
+  
 
   @override
   Widget build(BuildContext context) {
@@ -490,7 +487,6 @@ class _HomeScreenState extends State<HomeScreen>
                 );
               },
             ),
-
             _emergencyArcadeButton(),
           ],
         ),
@@ -498,7 +494,11 @@ class _HomeScreenState extends State<HomeScreen>
     );
   }
 
-  Widget _emergencyArcadeButton() {
+Widget _emergencyArcadeButton() {
+  // If animation not ready, show button without animation
+  if (!_pressController.isCompleted && !_pressController.isDismissed && 
+      _pressController.status != AnimationStatus.forward && 
+      _pressController.status != AnimationStatus.reverse) {
     return GestureDetector(
       onTapDown: _onEmergencyTapDown,
       onTapUp: _onEmergencyTapUp,
@@ -552,8 +552,9 @@ class _HomeScreenState extends State<HomeScreen>
           ),
         ),
       ),
-    );
-  }
+    ),
+  );
+}
 
   // ────────────────────────────────────────────
   // RIGHT
@@ -562,43 +563,10 @@ class _HomeScreenState extends State<HomeScreen>
   Widget _rightColumn() {
     return Column(
       children: [
-        _pinCard(),
         const SizedBox(height: 14),
-        _wellnessToolsCard(),
+        const SizedBox(height: 14),
+        const InspirationBoard(),
       ],
-    );
-  }
-
-  Widget _pinCard() {
-    return _card(
-      child: Row(
-        children: [
-          _iconBox(Icons.lock_rounded),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Acceso Temporal (PIN)',
-                  style: TextStyle(
-                    fontWeight: FontWeight.w600,
-                    fontSize: 14,
-                    color: AppColors.textPrimary,
-                  ),
-                ),
-                Text(
-                  'Gestiona quién ve tus registros',
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: AppColors.textSecondary,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
     );
   }
 
