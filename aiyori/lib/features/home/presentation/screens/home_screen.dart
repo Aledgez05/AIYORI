@@ -7,7 +7,8 @@ import 'calendar_screen.dart';
 import 'checkin_screen.dart';
 import 'patient_profile_screen.dart';
 import 'wellness_tools_screen.dart';
-import 'inspiration_board.dart';
+import 'widget/inspo_image_card.dart';
+import 'widget/wellness_tools_card.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -211,7 +212,7 @@ class _HomeScreenState extends State<HomeScreen>
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'Tu bienestar importa',
+                'You matter',
                 style: TextStyle(
                   fontWeight: FontWeight.w700,
                   fontSize: 15,
@@ -219,7 +220,7 @@ class _HomeScreenState extends State<HomeScreen>
                 ),
               ),
               Text(
-                'Hola, bienvenida',
+                'Hi, welcome back!',
                 style: TextStyle(
                   fontSize: 13,
                   color: AppColors.textSecondary,
@@ -228,7 +229,7 @@ class _HomeScreenState extends State<HomeScreen>
             ],
           ),
           const Spacer(),
-          _pill('Hoy'),
+          _pill('Today'),
         ],
       ),
     );
@@ -238,24 +239,29 @@ class _HomeScreenState extends State<HomeScreen>
   // EMERGENCY DIALOG
   // ────────────────────────────────────────────
 
-  void _showEmergencyDialog() {
-    showDialog(
-      context: context,
-      builder: (context) => Dialog(
-        backgroundColor: Colors.transparent,
-        child: Container(
-          padding: const EdgeInsets.all(24),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(24),
-            boxShadow: [
-              BoxShadow(
-                color: const Color(0xFFEF5350).withOpacity(0.15),
-                blurRadius: 30,
-                offset: const Offset(0, 10),
-              ),
-            ],
-          ),
+void _showEmergencyDialog() {
+  showDialog(
+    context: context,
+    builder: (context) => Dialog(
+      backgroundColor: Colors.transparent,
+      child: Container(
+        width: double.infinity,
+        constraints: BoxConstraints(
+          maxHeight: MediaQuery.of(context).size.height * 0.85, // Máximo 85% de la pantalla
+        ),
+        padding: const EdgeInsets.all(24),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(24),
+          boxShadow: [
+            BoxShadow(
+              color: const Color(0xFFEF5350).withOpacity(0.15),
+              blurRadius: 30,
+              offset: const Offset(0, 10),
+            ),
+          ],
+        ),
+        child: SingleChildScrollView(  // ← AÑADE ESTO
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -386,8 +392,9 @@ class _HomeScreenState extends State<HomeScreen>
           ),
         ),
       ),
-    );
-  }
+    ),
+  );
+}
 
   Widget _emergencyContactCard({
     required IconData icon,
@@ -436,69 +443,99 @@ class _HomeScreenState extends State<HomeScreen>
   // ────────────────────────────────────────────
 
   Widget _leftColumn() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        _sectionLabel('Quick Actions'),
-        const SizedBox(height: 10),
-
-        GridView.count(
-          crossAxisCount: 3,
-          childAspectRatio: 1.0,
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          crossAxisSpacing: 12,
-          mainAxisSpacing: 12,
-          children: [
-            _featureCard(
-              icon: Icons.favorite_rounded,
-              label: 'Emotional\nCheck-in',
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => const EmotionFlowerScreen(),
+  return Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      // QUICK ACTIONS SECTION
+      _sectionLabel('Quick Actions'),
+      const SizedBox(height: 10),
+      
+      GridView.count(
+        crossAxisCount: 3,
+        childAspectRatio: 0.9,
+        shrinkWrap: true,
+        physics: const NeverScrollableScrollPhysics(),
+        crossAxisSpacing: 12,
+        mainAxisSpacing: 12,
+        children: [
+          _featureCard(
+            icon: Icons.favorite_rounded,
+            label: 'Emotional\nCheck-in',
+            onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const EmotionFlowerScreen())),
+          ),
+          _featureCard(
+            icon: Icons.calendar_today_rounded,
+            label: 'Calendar',
+            onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const CalendarScreen())),
+          ),
+          _featureCard(
+            icon: Icons.medication_rounded,
+            label: 'Meds',
+            onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const MedsTrackScreen())),
+          ),
+        ],
+      ),
+      
+      const SizedBox(height: 16),
+      
+      // INSPO IMAGE 1 + EMERGENCY BUTTON + INSPO IMAGE 2 (en fila horizontal)
+      Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          // Primera imagen de inspiración (más pequeña)
+          Expanded(
+            child: SizedBox(
+              height: 150,
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(16),
+                child: Image.asset(
+                  'assets/images/inspo_1.jpg',
+                  width: double.infinity,
+                  height: 150,
+                  fit: BoxFit.cover,
+                  errorBuilder: (context, error, stack) => Container(
+                    color: AppColors.primary.withOpacity(0.1),
+                    child: const Icon(Icons.image_not_supported, size: 30),
                   ),
-                );
-              },
+                ),
+              ),
             ),
-            _featureCard(
-              icon: Icons.calendar_today_rounded,
-              label: 'Calendar',
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => const CalendarScreen(),
+          ),
+          
+          const SizedBox(width: 12),
+          
+          // Botón de emergencia más pequeño
+          _emergencyArcadeButton(),
+          
+          const SizedBox(width: 12),
+          
+          // Segunda imagen de inspiración (más pequeña)
+          Expanded(
+            child: SizedBox(
+              height: 150,
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(16),
+                child: Image.asset(
+                  'assets/images/inspo_5.jpg',
+                  width: double.infinity,
+                  height: 150,
+                  fit: BoxFit.cover,
+                  errorBuilder: (context, error, stack) => Container(
+                    color: AppColors.primary.withOpacity(0.1),
+                    child: const Icon(Icons.image_not_supported, size: 30),
                   ),
-                );
-              },
+                ),
+              ),
             ),
-
-            _featureCard(
-              icon: Icons.medication_rounded,
-              label: 'Meds',
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => const MedsTrackScreen(),
-                  ),
-                );
-              },
-            ),
-            _emergencyArcadeButton(),
-          ],
-        ),
-      ],
-    );
-  }
-
-Widget _emergencyArcadeButton() {
-  // If animation not ready, show button without animation
-  if (!_pressController.isCompleted && !_pressController.isDismissed && 
-      _pressController.status != AnimationStatus.forward && 
-      _pressController.status != AnimationStatus.reverse) {
+          ),
+        ],
+      ),
+      
+      const SizedBox(height: 20),
+    ],
+  );
+}
+  Widget _emergencyArcadeButton() {
     return GestureDetector(
       onTapDown: _onEmergencyTapDown,
       onTapUp: _onEmergencyTapUp,
@@ -512,6 +549,8 @@ Widget _emergencyArcadeButton() {
           );
         },
         child: Container(
+          width: 90,
+          height: 90,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
             color: const Color(0xFFE53935),
@@ -543,8 +582,8 @@ Widget _emergencyArcadeButton() {
                 style: TextStyle(
                   color: Colors.white,
                   fontWeight: FontWeight.w800,
-                  fontSize: 11,
-                  height: 1.3,
+                  fontSize: 9,
+                  height: 1,
                   letterSpacing: 0.5,
                 ),
               ),
@@ -552,9 +591,8 @@ Widget _emergencyArcadeButton() {
           ),
         ),
       ),
-    ),
-  );
-}
+    );
+  }
 
   // ────────────────────────────────────────────
   // RIGHT
@@ -564,8 +602,9 @@ Widget _emergencyArcadeButton() {
     return Column(
       children: [
         const SizedBox(height: 14),
-        const SizedBox(height: 14),
-        const InspirationBoard(),
+        const WellnessToolsCard(),
+        const SizedBox(height: 20),
+
       ],
     );
   }
